@@ -1,0 +1,52 @@
+name: Build ScanPro APK
+
+# Builds the app on GitHub's free servers, so no Android Studio or PC is needed.
+# Works two ways:
+#   1) the whole project is in the repository (gradlew in the root), or
+#   2) only ScanPro-source.zip is uploaded (the workflow unzips it).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate the project
+        run: |
+          if [ -f gradlew ]; then
+            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+          elif ls ./*.zip >/dev/null 2>&1; then
+            unzip -q -o "$(ls ./*.zip | head -1)" -d _src
+            g="$(find _src -name gradlew | head -1)"
+            if [ -z "$g" ]; then echo "gradlew not found inside the zip"; exit 1; fi
+            echo "PROJECT_DIR=$(dirname "$g")" >> "$GITHUB_ENV"
+          else
+            echo "No project found. Upload ScanPro-source.zip to the repository."
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build debug and release APKs
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleDebug assembleRelease
+
+      - name: Show the APKs
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: ls -la app/build/outputs/apk/*/*.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ScanPro-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error

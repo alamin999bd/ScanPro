@@ -1,0 +1,158 @@
+package com.scanpro.pdfdocscanner.ui.scan
+
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.scanpro.pdfdocscanner.core.FileStore
+import com.scanpro.pdfdocscanner.core.PdfEngine
+import com.scanpro.pdfdocscanner.data.DocumentRepository
+import com.scanpro.pdfdocscanner.data.SettingsRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+
+data class ScanUi(
+    /** Captured pages (temp files). In ID mode: index 0 = front, 1 = back. */
+    val pages: List<File> = emptyList(),
+    /** Index of the page open in the editor, or null. */
+    val editing: Int? = null,
+    val saving: Boolean = false,
+    val savedName: String? = null,
+    val savedId: Long? = null,
+    val error: String? = null,
+)
+
+class ScanViewModel(
+    private val repo: DocumentRepository,
+    private val files: FileStore,
+    private val pdf: PdfEngine,
+    private val settings: SettingsRepository,
+    private val isIdMode: Boolean,
+) : ViewModel() {
+
+    private val maxPages = if (isIdMode) 2 else Int.MAX_VALUE
+
+    private val _ui = MutableStateFlow(ScanUi())
+    val ui: StateFlow<ScanUi> = _ui
+
+    fun newCaptureFile(): File = files.newTempFile("jpg")
+
+    fun onCaptured(file: File) {
+        _ui.update { state ->
+            val pages = state.pages + file
+            // ID cards are cropped to the card shape straight away.
+            state.copy(pages = pages, error = null, editing = if (isIdMode) pages.lastIndex else state.editing)
+        }
+    }
+
+    fun onCaptureFailed(file: File, message: String) {
+        file.delete()
+        _ui.update { it.copy(error = message) }
+    }
+
+    /** Copies gallery images into scratch files so they can be edited like camera captures. */
+    fun addFromGallery(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        viewModelScope.launch {
+            val room = maxPages - _ui.value.pages.size
+            val accepted = uris.take(room.coerceAtLeast(0))
+            val copied = ArrayList<File>()
+            var failed = 0
+            withContext(Dispatchers.IO) {
+                accepted.forEach { uri ->
+                    val dest = files.newTempFile("jpg")
+                    try {
+                        files.copyTo(uri, dest)
+                        copied.add(dest)
+                    } catch (ignored: Exception) {
+                        dest.delete()
+                        failed++
+                    }
+                }
+            }
+            _ui.update {
+                it.copy(
+                    pages = it.pages + copied,
+                    error = when {
+                        failed > 0 -> "$failed image(s) could not be read."
+                        uris.size > accepted.size -> "Only ${accepted.size} image(s) were added (ID scan holds front and back)."
+                        else -> null
+                    },
+                )
+            }
+        }
+    }
+
+    fun openEditor(index: Int) = _ui.update { it.copy(editing = index) }
+    fun closeEditor() = _ui.update { it.copy(editing = null) }
+
+    /** Replaces a page with the edited file and removes the old scratch file. */
+    fun replacePage(index: Int, newFile: File) = _ui.update { state ->
+        val old = state.pages.getOrNull(index)
+        if (old == null) {
+            newFile.delete()
+            return@update state.copy(editing = null)
+        }
+        old.delete()
+        state.copy(
+            pages = state.pages.toMutableList().also { it[index] = newFile },
+            editing = null,
+        )
+    }
+
+    fun removePage(index: Int) = _ui.update { state ->
+        state.pages.getOrNull(index)?.delete()
+        state.copy(pages = state.pages.filterIndexed { i, _ -> i != index }, editing = null)
+    }
+
+    fun movePage(index: Int, delta: Int) = _ui.update { state ->
+        val target = index + delta
+        if (target !in state.pages.indices) return@update state
+        val list = state.pages.toMutableList()
+        list.add(target, list.removeAt(index))
+        state.copy(pages = list)
+    }
+
+    fun clearError() = _ui.update { it.copy(error = null) }
+
+    fun startOver() {
+        _ui.value.pages.forEach { it.delete() }
+        _ui.value = ScanUi()
+    }
+
+    fun save(name: String) {
+        val state = _ui.value
+        if (state.pages.isEmpty() || state.saving) return
+        viewModelScope.launch {
+            _ui.update { it.copy(saving = true, error = null) }
+            val out = files.newDocFile("pdf")
+            try {
+                val s = settings.settings.first()
+                val uris: List<Uri> = state.pages.map { Uri.fromFile(it) }
+                val finalName = name.ifBlank { FileStore.defaultScanName(if (isIdMode) "ID" else "Scan") }
+                if (isIdMode) {
+                    pdf.idCardToPdf(uris[0], uris.getOrNull(1), out, s.pageSize, s.imageQuality)
+                } else {
+                    pdf.imagesToPdf(uris, out, s.pageSize, s.imageQuality)
+                }
+                val pageCount = if (isIdMode) 1 else uris.size
+                val id = repo.addDocument(finalName, out, "pdf", pageCount)
+                state.pages.forEach { it.delete() }
+                _ui.value = ScanUi(savedName = FileStore.sanitizeName(finalName), savedId = id)
+            } catch (e: Exception) {
+                out.delete()
+                _ui.update { it.copy(saving = false, error = e.message ?: "Could not save the scan") }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        // Unsaved captures are scratch files.
+        _ui.value.pages.forEach { it.delete() }
+    }
+}
