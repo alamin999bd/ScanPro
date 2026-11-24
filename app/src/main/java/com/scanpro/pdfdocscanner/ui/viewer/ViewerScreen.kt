@@ -210,6 +210,7 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float) {
 @Composable
 private fun PictureView(container: AppContainer, doc: DocumentEntity, zoom: Float) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
+        val pageWidth = maxWidth * zoom
         Box(
             Modifier
                 .fillMaxSize()
@@ -221,7 +222,7 @@ private fun PictureView(container: AppContainer, doc: DocumentEntity, zoom: Floa
                 model = container.fileStore.docFile(doc.fileName),
                 contentDescription = doc.name,
                 contentScale = ContentScale.FillWidth,
-                modifier = Modifier.width(maxWidth * zoom),
+                modifier = Modifier.width(pageWidth),
             )
         }
     }
