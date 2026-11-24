@@ -35,11 +35,24 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Build debug and release APKs
+      - name: Build debug APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace assembleDebug assembleRelease
+          set -o pipefail
+          ./gradlew --no-daemon --console=plain assembleDebug 2>&1 | tee build.log
+
+      - name: Error summary (shown on the run page)
+        if: failure()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          {
+            echo "## Build errors"
+            echo '```'
+            grep -E "^e: |What went wrong|Could not |Execution failed|error:|Unresolved|Caused by" -A3 build.log | head -80
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^e: |What went wrong" -A2 build.log | head -20 | while IFS= read -r line; do echo "::error::${line}"; done || true
 
       - name: Show the APKs
         working-directory: ${{ env.PROJECT_DIR }}
