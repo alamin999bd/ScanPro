@@ -10,8 +10,8 @@
 | Package / namespace | `com.scanpro.pdfdocscanner` |
 | applicationId (release) | `com.scanpro.pdfdocscanner` |
 | applicationId (debug) | `com.scanpro.pdfdocscanner.debug` (আলাদা অ্যাপ হিসেবে ইনস্টল হয়) |
-| Version Name | `0.4.0` |
-| Version Code | `4` |
+| Version Name | `0.4.1` |
+| Version Code | `5` |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
 
 ## ২. টুল ও লাইব্রেরি (সব ভার্সন `gradle/libs.versions.toml`-এ)

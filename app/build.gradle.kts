@@ -13,8 +13,8 @@ android {
         applicationId = "com.scanpro.pdfdocscanner"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.4.1"
         vectorDrawables.useSupportLibrary = true
         // Keep the APK smaller: real phones are arm64 or (older) arm32.
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
