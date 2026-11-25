@@ -37,6 +37,23 @@ data class DocumentEntity(
     val folderId: Long? = null,
 )
 
+/** Recognized (OCR) text of a document, kept apart so big texts never slow down the document lists. */
+@Entity(
+    tableName = "document_text",
+    foreignKeys = [
+        ForeignKey(
+            entity = DocumentEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["docId"],
+            onDelete = ForeignKey.CASCADE,
+        )
+    ],
+)
+data class DocumentText(
+    @PrimaryKey val docId: Long,
+    val text: String,
+)
+
 data class FolderWithCount(
     val id: Long,
     val name: String,

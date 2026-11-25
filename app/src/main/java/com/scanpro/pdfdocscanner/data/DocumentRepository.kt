@@ -3,6 +3,7 @@ package com.scanpro.pdfdocscanner.data
 import com.scanpro.pdfdocscanner.core.FileStore
 import com.scanpro.pdfdocscanner.data.db.AppDatabase
 import com.scanpro.pdfdocscanner.data.db.DocumentEntity
+import com.scanpro.pdfdocscanner.data.db.DocumentText
 import com.scanpro.pdfdocscanner.data.db.FolderEntity
 import com.scanpro.pdfdocscanner.data.db.FolderWithCount
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +18,7 @@ class DocumentRepository(
 ) {
     private val docs get() = db.documentDao()
     private val folders get() = db.folderDao()
+    private val texts get() = db.textDao()
 
     fun observeDocuments(): Flow<List<DocumentEntity>> = docs.observeAll()
     fun observeRecent(limit: Int = 5): Flow<List<DocumentEntity>> = docs.observeRecent(limit)
@@ -25,6 +27,13 @@ class DocumentRepository(
 
     fun observeFolders(): Flow<List<FolderWithCount>> = folders.observeAllWithCount()
     fun observeFolderList(): Flow<List<FolderEntity>> = folders.observeAll()
+
+    /** Ids of documents whose recognized (OCR) text contains [needle]. */
+    fun observeTextMatches(needle: String): Flow<List<Long>> = texts.observeMatches(needle)
+
+    suspend fun saveText(docId: Long, text: String) = withContext(Dispatchers.IO) {
+        texts.upsert(DocumentText(docId, text))
+    }
 
     fun fileOf(doc: DocumentEntity): File = files.docFile(doc.fileName)
 

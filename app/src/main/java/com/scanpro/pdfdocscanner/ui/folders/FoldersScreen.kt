@@ -213,7 +213,7 @@ fun FolderDetailScreen(
     onBack: () -> Unit,
     onOpenViewer: (Long) -> Unit,
 ) {
-    val vm = containerViewModel(container, key = "folder_$folderId") { DocumentsViewModel(it.documents, folderId) }
+    val vm = containerViewModel(container, key = "folder_$folderId") { DocumentsViewModel(it.documents, it.ocrEngine, folderId) }
     val name by produceState("Folder", folderId) {
         value = container.documents.getFolder(folderId)?.name ?: "Folder"
     }

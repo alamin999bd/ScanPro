@@ -10,8 +10,8 @@
 | Package / namespace | `com.scanpro.pdfdocscanner` |
 | applicationId (release) | `com.scanpro.pdfdocscanner` |
 | applicationId (debug) | `com.scanpro.pdfdocscanner.debug` (আলাদা অ্যাপ হিসেবে ইনস্টল হয়) |
-| Version Name | `0.3.0` |
-| Version Code | `3` |
+| Version Name | `0.4.0` |
+| Version Code | `4` |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
 
 ## ২. টুল ও লাইব্রেরি (সব ভার্সন `gradle/libs.versions.toml`-এ)
@@ -83,7 +83,8 @@ Home Dashboard (৮ tile, Recent, Search আইকন) · Camera scan (flash, ta
 ## ৬. অসম্পূর্ণ / সীমাবদ্ধ (আগের ধাপে তৈরি হয়নি, তাই দাবি করা হয় না)
 
 - Auto ও Straighten দুটোই রঙের উজ্জ্বলতার পার্থক্য (Otsu threshold) দিয়ে পেজ খোঁজে; কোণ হাতে টেনে ঠিক করার সুবিধা নেই (শুধু Straighten চালু/বন্ধ)। পেজ ও টেবিলের রং কাছাকাছি হলে, বা কোণ ঢাকা থাকলে ব্যর্থ হয় ও বার্তা দেখায়।
-- OCR নেই; Search শুধু ফাইলের নামে। কারণ: বাংলা OCR-এর জন্য ভাষা-ডেটা ফাইল (traineddata) অ্যাপে বান্ডল করতে হয়, যা এখানে ডাউনলোড করা যায়নি; ML Kit-এর ইংরেজি OCR বান্ডল করলে লাইব্রেরি নিজে INTERNET permission বা টেলিমেট্রি আনে কি না এখানে যাচাই করা যায়নি, তাই আপনার "কোনো INTERNET permission নয়" শর্ত ভাঙার ঝুঁকিতে যোগ করা হয়নি।
+- OCR (বাংলা+ইংরেজি, Tesseract, অফলাইন): Documents তালিকার মেনুতে "Read text (OCR)"; পড়া লেখা সংরক্ষিত হয় ও Search-এ ফাইলের নামের পাশাপাশি লেখার ভেতরও খোঁজে। মান মাঝারি: ছাপা পরিষ্কার লেখায় ভালো, হাতের লেখা/ঝাপসা ছবিতে ভুল বেশি; প্রতি পেজে কয়েক সেকেন্ড লাগে; পুরনো ফাইল নিজে নিজে পড়া হয় না (প্রতিটির জন্য একবার চালাতে হয়)। ভাষা-ডেটা (`ben/eng.traineddata`, tessdata_fast) Git-এ নেই: GitHub Actions workflow Build-এর সময় নামিয়ে `app/src/main/assets/tessdata/`-এ রাখে। Android Studio-তে নিজে build করলে ফাইল দুটি ওই ফোল্ডারে হাতে রাখতে হবে (না রাখলে OCR "language data missing" বার্তা দেখায়, বাকি অ্যাপ ঠিক চলে)। ডেটাবেস সংস্করণ ২ (নতুন `document_text` টেবিল, আগের ডেটা অক্ষত)।
+- (পুরনো নোট, এখন প্রযোজ্য নয়) আগে OCR বাদ ছিল কারণ: বাংলা OCR-এর জন্য ভাষা-ডেটা ফাইল (traineddata) অ্যাপে বান্ডল করতে হয়, যা এখানে ডাউনলোড করা যায়নি; ML Kit-এর ইংরেজি OCR বান্ডল করলে লাইব্রেরি নিজে INTERNET permission বা টেলিমেট্রি আনে কি না এখানে যাচাই করা যায়নি, তাই আপনার "কোনো INTERNET permission নয়" শর্ত ভাঙার ঝুঁকিতে যোগ করা হয়নি।
 - Word/Excel import শুধু লেখা বের করে PDF বানায়: ছবি, রং, ফন্ট, চার্ট, সঠিক লেআউট থাকে না; Excel-এর তারিখ সংখ্যা হিসেবে দেখায়; পুরনো .doc/.xls সমর্থিত নয়। মূল ফাইল রাখা হয় না, শুধু PDF থাকে।
 - Signature হলো আঁকা ছবি বসানো (শুধু নিচের বাম/মাঝ/ডান, পেজ নম্বর বেছে); সার্টিফায়েড ডিজিটাল সিগনেচার নয়, ঘোরানো পেজে কাজ করে না।
 - Compress পেজকে ছবি বানিয়ে ছোট করে, তাই কপির লেখা select/search করা যায় না; ফল ছোট না হলে সংরক্ষণ হয় না।

@@ -12,6 +12,7 @@ datastore = "1.1.1"
 camerax = "1.4.0"
 pdfbox = "2.0.27.0"
 coil = "2.7.0"
+tesseract = "4.7.0"
 coroutines = "1.9.0"
 
 [libraries]
@@ -44,6 +45,7 @@ androidx-camera-view = { group = "androidx.camera", name = "camera-view", versio
 
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+tesseract4android = { group = "cz.adaptech.tesseract4android", name = "tesseract4android", version.ref = "tesseract" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 [plugins]

@@ -12,3 +12,6 @@ app/build/
 *.aab
 *.jks
 *.keystore
+
+# OCR language data is downloaded by the build workflow (see PROJECT_DOCS.md)
+app/src/main/assets/tessdata/*.traineddata

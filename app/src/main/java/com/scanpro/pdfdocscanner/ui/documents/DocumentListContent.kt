@@ -8,6 +8,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import com.scanpro.pdfdocscanner.ui.components.toast
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -17,6 +26,7 @@ import androidx.compose.material.icons.rounded.DriveFileMove
 import androidx.compose.material.icons.rounded.DriveFileRenameOutline
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.TextSnippet
 import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
@@ -79,6 +89,8 @@ fun DocumentListContent(
     val query by vm.query.collectAsStateWithLifecycle()
     val sort by vm.sort.collectAsStateWithLifecycle()
     val export = rememberDocExporter(container)
+    val ocrUi by vm.ocrState.collectAsStateWithLifecycle()
+    val clipboard = LocalClipboardManager.current
 
     var renaming by remember { mutableStateOf<DocumentEntity?>(null) }
     var deleting by remember { mutableStateOf<DocumentEntity?>(null) }
@@ -146,7 +158,7 @@ fun DocumentListContent(
                 EmptyState(
                     icon = Icons.Rounded.SearchOff,
                     title = "No matches",
-                    message = "Nothing is named \"${query.trim()}\". Try a different word.",
+                    message = "Nothing matches \"${query.trim()}\" in a name or in text read with OCR. Try a different word.",
                     modifier = Modifier.weight(1f),
                 )
             } else {
@@ -168,6 +180,7 @@ fun DocumentListContent(
                                     onSave = { export(doc) },
                                     onRename = { renaming = doc },
                                     onMove = { moving = doc },
+                                    onOcr = { vm.runOcr(doc) },
                                     onDelete = { deleting = doc },
                                 )
                             },
@@ -196,6 +209,63 @@ fun DocumentListContent(
             onConfirm = { vm.delete(doc); deleting = null },
             onDismiss = { deleting = null },
         )
+    }
+
+    when (val o = ocrUi) {
+        is OcrUi.Running -> AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Reading text…") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        if (o.total > 0) "\"${o.name}\": page ${o.done} of ${o.total}" else "\"${o.name}\"",
+                    )
+                    CircularProgressIndicator()
+                    Text(
+                        "This works offline and can take a few seconds per page.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = vm::cancelOcr) { Text("Cancel") } },
+        )
+        is OcrUi.Done -> AlertDialog(
+            onDismissRequest = vm::dismissOcr,
+            title = { Text("Text found") },
+            text = {
+                Column {
+                    Text(
+                        "Saved. You can now find \"${o.name}\" by searching for words inside it. " +
+                            "Recognition can make mistakes, especially with handwriting or blurry photos.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    SelectionContainer {
+                        Text(
+                            o.text,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .heightIn(max = 320.dp)
+                                .verticalScroll(rememberScrollState()),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    clipboard.setText(AnnotatedString(o.text))
+                    context.toast("Text copied")
+                }) { Text("Copy") }
+            },
+            dismissButton = { TextButton(onClick = vm::dismissOcr) { Text("Close") } },
+        )
+        is OcrUi.Failed -> AlertDialog(
+            onDismissRequest = vm::dismissOcr,
+            title = { Text("Could not read text") },
+            text = { Text(o.message) },
+            confirmButton = { TextButton(onClick = vm::dismissOcr) { Text("OK") } },
+        )
+        null -> Unit
     }
 
     moving?.let { doc ->
@@ -234,6 +304,7 @@ private fun DocMenu(
     onSave: () -> Unit,
     onRename: () -> Unit,
     onMove: () -> Unit,
+    onOcr: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -271,6 +342,11 @@ private fun DocMenu(
                 text = { Text("Move to folder") },
                 leadingIcon = { Icon(Icons.Rounded.DriveFileMove, null) },
                 onClick = { expanded = false; onMove() },
+            )
+            DropdownMenuItem(
+                text = { Text("Read text (OCR)") },
+                leadingIcon = { Icon(Icons.Rounded.TextSnippet, null) },
+                onClick = { expanded = false; onOcr() },
             )
             DropdownMenuItem(
                 text = { Text("Delete") },

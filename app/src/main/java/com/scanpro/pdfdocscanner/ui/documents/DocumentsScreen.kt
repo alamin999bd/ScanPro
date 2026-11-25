@@ -18,7 +18,7 @@ fun DocumentsScreen(
     onBack: () -> Unit,
     onOpenViewer: (Long) -> Unit,
 ) {
-    val vm = containerViewModel(container, key = "all_documents") { DocumentsViewModel(it.documents, null) }
+    val vm = containerViewModel(container, key = "all_documents") { DocumentsViewModel(it.documents, it.ocrEngine, null) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { ScanProTopBar(title = "My Documents", onBack = onBack) },

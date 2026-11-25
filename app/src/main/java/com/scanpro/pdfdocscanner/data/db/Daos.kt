@@ -35,6 +35,18 @@ interface DocumentDao {
 }
 
 @Dao
+interface TextDao {
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+    suspend fun upsert(text: DocumentText)
+
+    @Query("SELECT text FROM document_text WHERE docId = :docId")
+    suspend fun textOf(docId: Long): String?
+
+    @Query("SELECT docId FROM document_text WHERE instr(lower(text), lower(:needle)) > 0")
+    fun observeMatches(needle: String): Flow<List<Long>>
+}
+
+@Dao
 interface FolderDao {
     @Query(
         """

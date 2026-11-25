@@ -3,6 +3,7 @@ package com.scanpro.pdfdocscanner
 import android.content.Context
 import com.scanpro.pdfdocscanner.core.FileStore
 import com.scanpro.pdfdocscanner.core.ImageProcessor
+import com.scanpro.pdfdocscanner.core.OcrEngine
 import com.scanpro.pdfdocscanner.core.OfficeConverter
 import com.scanpro.pdfdocscanner.core.PdfEngine
 import com.scanpro.pdfdocscanner.data.DocumentRepository
@@ -16,6 +17,7 @@ class AppContainer(context: Context) {
     val fileStore: FileStore by lazy { FileStore(appContext) }
     val pdfEngine: PdfEngine by lazy { PdfEngine(appContext) }
     val officeConverter: OfficeConverter by lazy { OfficeConverter() }
+    val ocrEngine: OcrEngine by lazy { OcrEngine(appContext, pdfEngine) }
     val imageProcessor: ImageProcessor by lazy { ImageProcessor(pdfEngine) }
     private val database: AppDatabase by lazy { AppDatabase.create(appContext) }
     val documents: DocumentRepository by lazy { DocumentRepository(database, fileStore) }
