@@ -107,8 +107,20 @@ fun rememberDocExporter(container: AppContainer): (DocumentEntity) -> Unit {
                 else -> jpeg.launch(name)
             }
         } catch (ignored: ActivityNotFoundException) {
+            // No "Save as" screen on this phone: save straight into Downloads/ScanPro instead.
             pendingId = null
-            context.toast("No file manager found to save the file")
+            scope.launch {
+                val result = runCatching {
+                    withContext(Dispatchers.IO) {
+                        container.fileStore.saveToDownloads(container.documents.fileOf(doc), name, mimeFor(doc))
+                    }
+                }
+                when {
+                    result.isFailure -> context.toast("Could not save the file")
+                    result.getOrNull() == true -> context.toast("Saved to Downloads/ScanPro")
+                    else -> context.toast("Saving is not available on this phone. Use Share instead.")
+                }
+            }
         }
     }
 }

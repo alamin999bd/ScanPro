@@ -63,6 +63,38 @@ class FileStore(private val context: Context) {
         out.use { o -> src.inputStream().use { it.copyTo(o) } }
     }
 
+    /**
+     * Saves a copy straight into the phone's Downloads/ScanPro folder (Android 10 and newer, no
+     * permission needed). Used when no file-manager screen is available for "Save as".
+     * Returns false on older Android versions, where the caller should suggest Share instead.
+     */
+    fun saveToDownloads(src: File, displayName: String, mime: String): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) return false
+        val resolver = context.contentResolver
+        val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, mime)
+            put(
+                android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
+                android.os.Environment.DIRECTORY_DOWNLOADS + "/ScanPro",
+            )
+            put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: throw java.io.IOException("Could not create the file in Downloads")
+        try {
+            val out = resolver.openOutputStream(uri) ?: throw java.io.IOException("Could not open the file")
+            out.use { o -> src.inputStream().use { it.copyTo(o) } }
+            values.clear()
+            values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
+        } catch (e: Exception) {
+            runCatching { resolver.delete(uri, null, null) }
+            throw e
+        }
+        return true
+    }
+
     fun uriFor(file: File): Uri =
         FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 
