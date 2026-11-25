@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import com.scanpro.pdfdocscanner.ui.components.toast
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -216,6 +219,8 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                 }) { Text("Open app permissions") }
             }
 
+            ProblemReportCard()
+
             SettingsCard(title = "About") {
                 Text("ScanPro – PDF & Document Scanner", style = MaterialTheme.typography.titleSmall)
                 Text(
@@ -229,6 +234,53 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                         "Your documents never leave this device unless you share them yourself.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
+            }
+        }
+    }
+}
+
+/** Shows the details of the last crash (kept only on this phone) so it can be copied for the developer. */
+@Composable
+private fun ProblemReportCard() {
+    val context = LocalContext.current
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val file = remember { java.io.File(context.filesDir, com.scanpro.pdfdocscanner.ScanProApp.CRASH_FILE) }
+    var report by remember { mutableStateOf(runCatching { if (file.exists()) file.readText() else "" }.getOrDefault("")) }
+
+    SettingsCard(title = "Problem report") {
+        if (report.isBlank()) {
+            Text(
+                "No crash has been recorded. If the app ever closes by itself, open this screen again " +
+                    "and copy the report to send to the developer.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text(
+                "The app closed unexpectedly last time. Copy this report and send it to the developer.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.foundation.text.selection.SelectionContainer {
+                Text(
+                    report.take(1500),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 220.dp),
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = {
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(report))
+                    context.toast("Report copied")
+                }) { Text("Copy report") }
+                OutlinedButton(onClick = {
+                    runCatching { file.delete() }
+                    report = ""
+                }) { Text("Clear") }
             }
         }
     }

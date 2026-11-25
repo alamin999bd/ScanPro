@@ -11,10 +11,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.scanpro.pdfdocscanner.AppContainer
 import com.scanpro.pdfdocscanner.data.db.DocumentEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 fun Context.toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
@@ -66,16 +71,24 @@ private fun extensionFor(doc: DocumentEntity): String = when {
 @Composable
 fun rememberDocExporter(container: AppContainer): (DocumentEntity) -> Unit {
     val context = LocalContext.current
-    var pending by remember { mutableStateOf<DocumentEntity?>(null) }
+    val scope = rememberCoroutineScope()
+    // Only the id is remembered, and it survives the app being recreated while the system "Save as"
+    // screen is open (this happens on phones with little free memory).
+    var pendingId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     val onResult: (Uri?) -> Unit = { uri ->
-        val doc = pending
-        pending = null
-        if (uri != null && doc != null) {
-            val ok = runCatching {
-                container.fileStore.exportTo(container.documents.fileOf(doc), uri)
-            }.isSuccess
-            context.toast(if (ok) "Saved to your device" else "Could not save the file")
+        val id = pendingId
+        pendingId = null
+        if (uri != null && id != null) {
+            scope.launch {
+                val ok = runCatching {
+                    withContext(Dispatchers.IO) {
+                        val doc = container.documents.getDocument(id) ?: throw IllegalStateException("missing")
+                        container.fileStore.exportTo(container.documents.fileOf(doc), uri)
+                    }
+                }.isSuccess
+                context.toast(if (ok) "Saved to your device" else "Could not save the file")
+            }
         }
     }
     val pdf = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf"), onResult)
@@ -84,13 +97,18 @@ fun rememberDocExporter(container: AppContainer): (DocumentEntity) -> Unit {
     val webp = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/webp"), onResult)
 
     return { doc ->
-        pending = doc
+        pendingId = doc.id
         val name = doc.name + extensionFor(doc)
-        when (mimeFor(doc)) {
-            "application/pdf" -> pdf.launch(name)
-            "image/png" -> png.launch(name)
-            "image/webp" -> webp.launch(name)
-            else -> jpeg.launch(name)
+        try {
+            when (mimeFor(doc)) {
+                "application/pdf" -> pdf.launch(name)
+                "image/png" -> png.launch(name)
+                "image/webp" -> webp.launch(name)
+                else -> jpeg.launch(name)
+            }
+        } catch (ignored: ActivityNotFoundException) {
+            pendingId = null
+            context.toast("No file manager found to save the file")
         }
     }
 }

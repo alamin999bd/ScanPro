@@ -129,3 +129,6 @@ Home Dashboard (৮ tile, Recent, Search আইকন) · Camera scan (flash, ta
 6. ব্যবহারকারীর ফাইল মোছার আগে সবসময় confirm dialog রাখুন।
 7. প্রতিটি পরিবর্তনের পর: Sync → Build → ফোনে চালিয়ে scan, import, PDF তৈরি, viewer, rename/move/delete, dark mode পরীক্ষা করুন।
 8. পরবর্তী প্রস্তাবিত কাজ: প্রথম আসল build-এর error ঠিক করা → ডিভাইস টেস্ট → auto edge detection (OpenCV) → OCR → PDF compress/lock → আসল signing key → Play Store।
+
+## Problem report (ক্র্যাশের তথ্য)
+অ্যাপ হঠাৎ বন্ধ হলে তার বিবরণ ফোনেই `last_crash.txt` ফাইলে লেখা হয় (কোথাও পাঠানো হয় না)। Settings → "Problem report" থেকে দেখা, Copy ও Clear করা যায়। বাগ জানানোর সময় এটি কপি করে ডেভেলপারকে দিন।
