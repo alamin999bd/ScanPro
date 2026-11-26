@@ -151,9 +151,9 @@ fun HomeScreen(
 private fun HomeHeader(onSearch: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("ScanPro", style = MaterialTheme.typography.headlineMedium)
+            Text("Document Scanner", style = MaterialTheme.typography.headlineMedium)
             Text(
-                "PDF & Document Scanner",
+                "Scan, OCR & PDF Tools",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
