@@ -19,6 +19,10 @@ enum class PageFilter(val label: String) {
     DOCUMENT("B&W Document"),
     GRAYSCALE("Grayscale"),
     VIVID("Vivid"),
+    AUTO("Auto"),
+    LIGHTEN("Lighten"),
+    DARKEN("Darken"),
+    COLOR("Color"),
 }
 
 /** Crop rectangle in normalized (0..1) coordinates of the already-rotated image. */
@@ -151,6 +155,10 @@ class ImageProcessor(private val pdf: PdfEngine) {
                 val s = stretch(cur)
                 transform(s, ColorMatrix().apply { setSaturation(1.35f) })
             }
+            PageFilter.AUTO -> sharpen(stretch(cur), 0.45f)
+            PageFilter.LIGHTEN -> stretch(transform(cur, contrastMatrix(1.04f, 22f)))
+            PageFilter.DARKEN -> transform(cur, contrastMatrix(1.08f, -18f))
+            PageFilter.COLOR -> transform(stretch(cur), ColorMatrix().apply { setSaturation(1.15f) })
         }
     }
 
