@@ -86,6 +86,8 @@ private enum class Tool(val title: String, val description: String, val icon: Im
     DELETE_PAGES("Delete pages", "Remove selected pages from a new PDF copy.", Icons.Rounded.ContentCut, TilePdfTools),
     REORDER_PAGES("Reorder pages", "Arrange every page in a custom order.", Icons.Rounded.Edit, TileScan),
     ROTATE_PAGES("Rotate pages", "Rotate all pages in a new PDF copy.", Icons.Rounded.RotateRight, TileFolders),
+    PAGE_NUMBERS("Add page numbers", "Add selectable page numbers to every page.", Icons.Rounded.PictureAsPdf, TilePdfTools),
+    SEARCH_TEXT("Search PDF text", "Find selectable text inside a PDF.", Icons.Rounded.PictureAsPdf, TileDocuments),
 }
 
 @Composable
@@ -136,6 +138,8 @@ fun PdfToolsScreen(container: AppContainer, onBack: () -> Unit) {
                 onDeletePages = vm::deletePages,
                 onReorderPages = vm::reorderPages,
                 onRotatePages = vm::rotatePages,
+                onAddPageNumbers = vm::addPageNumbers,
+                onSearchPdfText = vm::searchPdfText,
             )
         }
     }
@@ -209,13 +213,15 @@ private fun ToolPanel(
     onDeletePages: (DocumentEntity, String, String) -> Unit,
     onReorderPages: (DocumentEntity, String, String) -> Unit,
     onRotatePages: (DocumentEntity, Int, String) -> Unit,
+    onAddPageNumbers: (DocumentEntity, String) -> Unit,
+    onSearchPdfText: (DocumentEntity, String) -> Unit,
 ) {
     // Selection order matters for merging, so keep an ordered list.
     val selected = remember(tool) { mutableStateListOf<DocumentEntity>() }
     var pages by remember(tool) { mutableStateOf("") }
     var name by remember(tool) { mutableStateOf("") }
     var password by remember(tool) { mutableStateOf("") }
-    var watermarkText by remember(tool) { mutableStateOf("") }
+    var watermarkText by remember(tool) { mutableStateOf("") }\n    var searchQuery by remember(tool) { mutableStateOf("") }
     var level by remember(tool) { mutableIntStateOf(if (tool == Tool.ROTATE_PAGES) 90 else 1) }
     var strokes by remember(tool) { mutableStateOf<List<List<Offset>>>(emptyList()) }
     var signPage by remember(tool) { mutableStateOf("") }
@@ -234,6 +240,8 @@ private fun ToolPanel(
         Tool.DELETE_PAGES -> "Choose a PDF and list the pages to remove. The original is kept."
         Tool.REORDER_PAGES -> "Enter every page number exactly once in the desired order."
         Tool.ROTATE_PAGES -> "Rotate all pages clockwise in a new copy."
+        Tool.PAGE_NUMBERS -> "Add page numbers to a new PDF copy."
+        Tool.SEARCH_TEXT -> "Search text contained in a PDF. Image-only scanned pages need OCR text embedded first."
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -299,7 +307,7 @@ private fun ToolPanel(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            if (tool == Tool.ROTATE_PAGES) {
+            if (tool == Tool.SEARCH_TEXT) {\n                OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, label = { Text("Text to find") }, singleLine = true, modifier = Modifier.fillMaxWidth())\n            }\n            if (tool == Tool.ROTATE_PAGES) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(90, 180, 270).forEach { degrees ->
                         FilterChip(selected = level == degrees, onClick = { level = degrees }, label = { Text("$degrees°") })
@@ -392,6 +400,8 @@ private fun ToolPanel(
                 Tool.DELETE_PAGES -> selected.size == 1 && pages.isNotBlank() && selected.first().pageCount > 1
                 Tool.REORDER_PAGES -> selected.size == 1 && pages.isNotBlank() && selected.first().pageCount > 1
                 Tool.ROTATE_PAGES -> selected.size == 1 && selected.first().pageCount > 0
+                Tool.PAGE_NUMBERS -> selected.size == 1 && selected.first().pageCount > 0
+                Tool.SEARCH_TEXT -> selected.size == 1 && searchQuery.isNotBlank()
             }
             Button(
                 onClick = {
@@ -410,6 +420,8 @@ private fun ToolPanel(
                         Tool.DELETE_PAGES -> onDeletePages(selected.first(), pages, name)
                         Tool.REORDER_PAGES -> onReorderPages(selected.first(), pages, name)
                         Tool.ROTATE_PAGES -> onRotatePages(selected.first(), level, name)
+                        Tool.PAGE_NUMBERS -> onAddPageNumbers(selected.first(), name)
+                        Tool.SEARCH_TEXT -> onSearchPdfText(selected.first(), searchQuery.trim())
                     }
                 },
                 enabled = ready,
@@ -428,6 +440,8 @@ private fun ToolPanel(
                         Tool.DELETE_PAGES -> "Delete selected pages"
                         Tool.REORDER_PAGES -> "Save page order"
                         Tool.ROTATE_PAGES -> "Rotate all pages"
+                        Tool.PAGE_NUMBERS -> "Add page numbers"
+                        Tool.SEARCH_TEXT -> "Search PDF"
                     }
                 )
             }
