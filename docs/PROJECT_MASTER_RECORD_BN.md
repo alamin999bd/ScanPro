@@ -121,3 +121,16 @@
 - [ ] README/build instructions/dependencies/version documentation
 - [ ] এই master record ও status file আপডেট
 - [ ] ব্যবহারকারীকে শুধু final delivery links ও সংক্ষিপ্ত install guidance দেওয়া
+
+
+## 10. Audit update — 2026-11-27 (run #21)
+- Latest confirmed CI run: #21, ID `45877343244`, commit `d98de944e225e4b3951fb47fdebd0fdd077ce0d7`; build job succeeded. Artifact `Document-Scanner-APK` ID `15145796196` (68,382,545 bytes). CI build evidence only; not final distribution.
+- Camera source audit: `ScanScreen.kt` uses CameraX live preview, tap-to-focus, flash, MAXIMIZE_QUALITY capture and gallery multi-select. `ScanViewModel.kt` supports multi-page capture, reorder/remove, editing and PDF save.
+- Image pipeline audit: `ImageProcessor.kt` performs perspective warp, rotation, crop and filter processing. Perspective transform uses Android `Matrix.setPolyToPoly`; no OpenCV dependency is present.
+- OCR audit: `OcrEngine.kt` runs offline Tesseract with `ben+eng`, requiring both traineddata assets. `DocumentsViewModel.kt` stores recognized text and document search matches OCR text.
+- Important distinction: current OCR text is stored in Room for in-app document search; the exported scanned PDF does not currently receive an invisible/searchable OCR text layer. This remains a priority gap.
+- PDF tools exposed: Merge, Split/Extract, PDF-to-Images, Compress, Lock, Unlock, Watermark, Sign. Page delete/reorder/rotate, page numbering, text annotation, highlight, bookmarks and PDF internal text search are not exposed by the current PDF tools/viewer code.
+- Compression trade-off: current `PdfEngine.compress()` rasterizes PDF pages to JPEG, which can remove selectable/searchable text. The UI should clearly disclose this.
+- Release signing falls back to debug signing unless a release keystore path is configured; production/Play signing is not established.
+- No physical Samsung Galaxy M12 test or automated unit/instrumentation suite was confirmed during this audit.
+- Continue with scan/perspective validation, OCR/searchable-PDF design, missing PDF operations, tests and final signing/build verification.
