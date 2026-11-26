@@ -82,6 +82,9 @@ private enum class Tool(val title: String, val description: String, val icon: Im
     UNLOCK("Remove password", "Save an unprotected copy (you must know the password).", Icons.Rounded.LockOpen, TileFolders),
     WATERMARK("Add watermark", "Stamp a text across every page.", Icons.Rounded.BrandingWatermark, TileDocuments),
     SIGN("Sign PDF", "Draw your signature and place it on a page.", Icons.Rounded.Edit, TileScan),
+    DELETE_PAGES("Delete pages", "Remove selected pages from a new PDF copy.", Icons.Rounded.ContentCut, TilePdfTools),
+    REORDER_PAGES("Reorder pages", "Arrange every page in a custom order.", Icons.Rounded.Edit, TileScan),
+    ROTATE_PAGES("Rotate pages", "Rotate all pages in a new PDF copy.", Icons.Rounded.RotateRight, TileFolders),
 }
 
 @Composable
@@ -129,6 +132,9 @@ fun PdfToolsScreen(container: AppContainer, onBack: () -> Unit) {
                 onUnlock = vm::unlock,
                 onWatermark = vm::watermark,
                 onSign = vm::sign,
+                onDeletePages = vm::deletePages,
+                onReorderPages = vm::reorderPages,
+                onRotatePages = vm::rotatePages,
             )
         }
     }
@@ -199,6 +205,9 @@ private fun ToolPanel(
     onUnlock: (DocumentEntity, String, String) -> Unit,
     onWatermark: (DocumentEntity, String, String) -> Unit,
     onSign: (DocumentEntity, Bitmap, String, Int, String) -> Unit,
+    onDeletePages: (DocumentEntity, String, String) -> Unit,
+    onReorderPages: (DocumentEntity, String, String) -> Unit,
+    onRotatePages: (DocumentEntity, Int, String) -> Unit,
 ) {
     // Selection order matters for merging, so keep an ordered list.
     val selected = remember(tool) { mutableStateListOf<DocumentEntity>() }
@@ -221,6 +230,9 @@ private fun ToolPanel(
         Tool.UNLOCK -> "Choose a password-protected PDF and enter its password."
         Tool.WATERMARK -> "Choose one PDF. A watermarked copy is added; the original is kept."
         Tool.SIGN -> "Choose one PDF. A signed copy is added; the original is kept."
+        Tool.DELETE_PAGES -> "Choose a PDF and list the pages to remove. The original is kept."
+        Tool.REORDER_PAGES -> "Enter every page number exactly once in the desired order."
+        Tool.ROTATE_PAGES -> "Rotate all pages clockwise in a new copy."
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -266,15 +278,32 @@ private fun ToolPanel(
         }
 
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (tool == Tool.EXTRACT) {
+            if (tool == Tool.EXTRACT || tool == Tool.DELETE_PAGES) {
                 val total = selected.firstOrNull()?.pageCount?.takeIf { it > 0 }
                 OutlinedTextField(
                     value = pages,
                     onValueChange = { pages = it },
-                    label = { Text(if (total != null) "Pages (1-$total), e.g. 1-3, 5" else "Pages, e.g. 1-3, 5") },
+                    label = { Text(if (tool == Tool.DELETE_PAGES) "Pages to delete, e.g. 2-3, 5" else if (total != null) "Pages (1-$total), e.g. 1-3, 5" else "Pages, e.g. 1-3, 5") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+            if (tool == Tool.REORDER_PAGES) {
+                OutlinedTextField(
+                    value = pages,
+                    onValueChange = { pages = it.filter { ch -> ch.isDigit() || ch == ',' || ch.isWhitespace() } },
+                    label = { Text("Page order, e.g. 3,1,2") },
+                    supportingText = { Text("Enter all ${selected.firstOrNull()?.pageCount ?: 0} pages exactly once.") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (tool == Tool.ROTATE_PAGES) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(90, 180, 270).forEach { degrees ->
+                        FilterChip(selected = level == degrees, onClick = { level = degrees }, label = { Text("$degrees°") })
+                    }
+                }
             }
             if (tool == Tool.COMPRESS) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -359,6 +388,9 @@ private fun ToolPanel(
                 Tool.UNLOCK -> selected.size == 1 && password.isNotEmpty()
                 Tool.WATERMARK -> selected.size == 1 && watermarkText.isNotBlank()
                 Tool.SIGN -> selected.size == 1 && selected.first().pageCount > 0 && strokes.isNotEmpty()
+                Tool.DELETE_PAGES -> selected.size == 1 && pages.isNotBlank() && selected.first().pageCount > 1
+                Tool.REORDER_PAGES -> selected.size == 1 && pages.isNotBlank() && selected.first().pageCount > 1
+                Tool.ROTATE_PAGES -> selected.size == 1 && selected.first().pageCount > 0
             }
             Button(
                 onClick = {
@@ -388,7 +420,7 @@ private fun ToolPanel(
                         Tool.LOCK -> "Lock PDF"
                         Tool.UNLOCK -> "Remove password"
                         Tool.WATERMARK -> "Add watermark"
-                        Tool.SIGN -> "Sign PDF"
+                        Tool.SIGN -> "Sign PDF"\n                        Tool.DELETE_PAGES -> "Delete selected pages"\n                        Tool.REORDER_PAGES -> "Save page order"\n                        Tool.ROTATE_PAGES -> "Rotate all pages"
                     }
                 )
             }
