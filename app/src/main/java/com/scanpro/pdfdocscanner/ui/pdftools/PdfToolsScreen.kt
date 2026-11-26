@@ -421,7 +421,10 @@ private fun ToolPanel(
                         Tool.LOCK -> "Lock PDF"
                         Tool.UNLOCK -> "Remove password"
                         Tool.WATERMARK -> "Add watermark"
-                        Tool.SIGN -> "Sign PDF"\n                        Tool.DELETE_PAGES -> "Delete selected pages"\n                        Tool.REORDER_PAGES -> "Save page order"\n                        Tool.ROTATE_PAGES -> "Rotate all pages"
+                        Tool.SIGN -> "Sign PDF"
+                        Tool.DELETE_PAGES -> "Delete selected pages"
+                        Tool.REORDER_PAGES -> "Save page order"
+                        Tool.ROTATE_PAGES -> "Rotate all pages"
                     }
                 )
             }
