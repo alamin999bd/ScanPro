@@ -34,7 +34,10 @@ Source version: **0.6.0 (versionCode 8)**
 ## Verification status
 - Repository, working branch and uploaded ZIP variants inspected. The uploaded ZIPs are older than the current working branch; do not overwrite the branch with them.
 - Source code and current GitHub Actions workflow reviewed.
-- Added filter presets and draggable quadrilateral corner adjustment in source. GitHub Actions build verification is pending for these commits. No unit/instrumentation tests exist in the repository tree at this point.
+- Added filter presets and draggable quadrilateral corner adjustment in source.
+- GitHub Actions run #19 (ID `45876446027`) completed successfully on commit `5a35917f33012a62c507dc739e8934a985794ddb`; debug/release APK output verification and artifact upload steps passed. Artifact: `Document-Scanner-APK` (ID `15144354380`). This confirms CI build/package output only, not end-to-end feature correctness.
+- A persistent project master record was created at `docs/PROJECT_MASTER_RECORD_BN.md` (commit `a7af95c550abe725d479bdd509cc8ed02b5e16e8` created it; file is present on this branch).
+- No unit/instrumentation tests exist in the repository tree at this point.
 - No physical Samsung Galaxy M12 test has been performed in this session.
 
 ## Resume in the next chat
@@ -42,3 +45,8 @@ Continue this Document Scanner project from this branch and this file. Check the
 
 ## Changelog
 - 0.5.1: build workflow, version tracking and audit/resume notes.\n- 0.6.0: expanded offline document filter presets and added draggable perspective quadrilateral corners; fixed drag gesture restart; sequentialized Debug/Release Gradle build to avoid Room schema generation race. Build and functional verification pending.
+
+
+## 2026-11-27 project archive update
+- Added `docs/PROJECT_MASTER_RECORD_BN.md` as the permanent project handover/master file. It records scope, user constraints, repo/branch/version, implemented changes, verification evidence, remaining work, resume protocol and final delivery checklist.
+- Latest confirmed CI run #19 is successful; do not distribute its APK as final because the remaining feature and device validation work is not complete.
