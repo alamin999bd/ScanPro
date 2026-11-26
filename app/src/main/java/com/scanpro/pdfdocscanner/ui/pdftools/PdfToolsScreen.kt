@@ -221,7 +221,8 @@ private fun ToolPanel(
     var pages by remember(tool) { mutableStateOf("") }
     var name by remember(tool) { mutableStateOf("") }
     var password by remember(tool) { mutableStateOf("") }
-    var watermarkText by remember(tool) { mutableStateOf("") }\n    var searchQuery by remember(tool) { mutableStateOf("") }
+    var watermarkText by remember(tool) { mutableStateOf("") }
+    var searchQuery by remember(tool) { mutableStateOf("") }
     var level by remember(tool) { mutableIntStateOf(if (tool == Tool.ROTATE_PAGES) 90 else 1) }
     var strokes by remember(tool) { mutableStateOf<List<List<Offset>>>(emptyList()) }
     var signPage by remember(tool) { mutableStateOf("") }
@@ -307,7 +308,10 @@ private fun ToolPanel(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            if (tool == Tool.SEARCH_TEXT) {\n                OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, label = { Text("Text to find") }, singleLine = true, modifier = Modifier.fillMaxWidth())\n            }\n            if (tool == Tool.ROTATE_PAGES) {
+            if (tool == Tool.SEARCH_TEXT) {
+                OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, label = { Text("Text to find") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            }
+            if (tool == Tool.ROTATE_PAGES) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(90, 180, 270).forEach { degrees ->
                         FilterChip(selected = level == degrees, onClick = { level = degrees }, label = { Text("$degrees°") })
