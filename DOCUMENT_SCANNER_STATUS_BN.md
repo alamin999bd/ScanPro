@@ -71,3 +71,9 @@ Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD
 - Added matching ViewModel operations with input validation, progress/error messages and new-document registration.
 - Added `Delete pages`, `Reorder pages`, and `Rotate pages` options to PDF Tools UI. Reorder requires every page exactly once; rotation supports 90/180/270 degrees clockwise.
 - GitHub Actions builds triggered by these commits are currently in progress at the time of this note; compile success is not yet confirmed. Verify the newest run against the latest branch HEAD before continuing.
+
+
+## 2026-11-27 CI failure diagnosis and fix
+- User screenshot showed runs #28–#31 red. Inspected GitHub job logs: all four failed at Kotlin parsing in `PdfToolsScreen.kt`, line 424 (run #31; earlier line 423). Root cause was literal `\n` characters accidentally inserted between `when(tool)` branches after `Tool.SIGN`, not Gradle/KSP or PDFBox.
+- Corrected the malformed line breaks and committed fix `a46f486fafdcc39491adc6a327ade9c06ec50754` (`fix(pdf): correct malformed PDF tools action labels`).
+- A fresh build for this exact HEAD still needs confirmation. Do not mark the fix as verified until GitHub Actions passes.
