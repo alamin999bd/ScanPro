@@ -186,10 +186,12 @@ fun PageEditorScreen(
                     loadFailed -> Text("This image could not be opened.", color = Color.White)
                     img == null -> CircularProgressIndicator()
                     else -> CropArea(
-                        image = img,
+                        image = if (quad != null) source ?: img else img,
                         crop = crop,
                         aspect = aspect,
+                        quad = quad,
                         onCrop = { crop = it },
+                        onQuad = { quad = it },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -363,7 +365,9 @@ private fun CropArea(
     image: Bitmap,
     crop: NRect,
     aspect: Float?,
+    quad: List<Float>?,
     onCrop: (NRect) -> Unit,
+    onQuad: (List<Float>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val primary = MaterialTheme.colorScheme.primary
@@ -371,6 +375,8 @@ private fun CropArea(
     val bitmap = remember(image) { image.asImageBitmap() }
     val currentCrop by rememberUpdatedState(crop)
     val currentOnCrop by rememberUpdatedState(onCrop)
+    val currentQuad by rememberUpdatedState(quad)
+    val currentOnQuad by rememberUpdatedState(onQuad)
 
     BoxWithConstraints(modifier = modifier) {
         val boxW = constraints.maxWidth.toFloat()
@@ -394,40 +400,66 @@ private fun CropArea(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(dw, dh, aspect) {
-                    // 0..3 = TL, TR, BL, BR corners; 4 = move; -1 = none
+                .pointerInput(dw, dh, aspect, quad) {
+                    // With a detected quadrilateral, drag its four corners directly.
+                    // Otherwise use the rectangular crop handles below.
                     var active = -1
+                    var activeQuadCorner = -1
                     detectDragGestures(
                         onDragStart = { p ->
-                            val c = currentCrop
-                            val l = ox + c.left * dw
-                            val t = oy + c.top * dh
-                            val r = ox + c.right * dw
-                            val b = oy + c.bottom * dh
-                            val corners = listOf(Offset(l, t), Offset(r, t), Offset(l, b), Offset(r, b))
-                            var best = -1
-                            var bestDist = touch
-                            corners.forEachIndexed { i, o ->
-                                val d = (o - p).getDistance()
-                                if (d < bestDist) {
-                                    bestDist = d
-                                    best = i
+                            val q = currentQuad
+                            if (q != null && q.size == 8) {
+                                val points = (0..3).map { i ->
+                                    Offset(ox + q[i * 2] * dw, oy + q[i * 2 + 1] * dh)
+                                }
+                                var best = -1
+                                var bestDist = touch * 1.5f
+                                points.forEachIndexed { i, point ->
+                                    val d = (point - p).getDistance()
+                                    if (d < bestDist) { bestDist = d; best = i }
+                                }
+                                activeQuadCorner = best
+                                active = -2
+                            } else {
+                                val cropNow = currentCrop
+                                val l = ox + cropNow.left * dw
+                                val t = oy + cropNow.top * dh
+                                val r = ox + cropNow.right * dw
+                                val b = oy + cropNow.bottom * dh
+                                val corners = listOf(Offset(l, t), Offset(r, t), Offset(l, b), Offset(r, b))
+                                var best = -1
+                                var bestDist = touch
+                                corners.forEachIndexed { i, point ->
+                                    val d = (point - p).getDistance()
+                                    if (d < bestDist) { bestDist = d; best = i }
+                                }
+                                active = when {
+                                    best >= 0 -> best
+                                    p.x in l..r && p.y in t..b -> 4
+                                    else -> -1
                                 }
                             }
-                            active = when {
-                                best >= 0 -> best
-                                p.x in l..r && p.y in t..b -> 4
-                                else -> -1
-                            }
                         },
-                        onDragEnd = { active = -1 },
-                        onDragCancel = { active = -1 },
+                        onDragEnd = { active = -1; activeQuadCorner = -1 },
+                        onDragCancel = { active = -1; activeQuadCorner = -1 },
                         onDrag = { change, drag ->
                             change.consume()
-                            if (active >= 0) {
-                                currentOnCrop(
-                                    updateCrop(currentCrop, active, drag.x / dw, drag.y / dh, aspect, dw, dh)
-                                )
+                            if (active == -2 && activeQuadCorner >= 0) {
+                                val q = currentQuad?.toMutableList() ?: return@detectDragGestures
+                                val i = activeQuadCorner * 2
+                                val minGap = 0.025f
+                                val nx = (q[i] + drag.x / dw).coerceIn(0f, 1f)
+                                val ny = (q[i + 1] + drag.y / dh).coerceIn(0f, 1f)
+                                q[i] = nx
+                                q[i + 1] = ny
+                                // Keep each corner inside the image; prevent exact edge degeneracy.
+                                val prev = (activeQuadCorner + 3) % 4
+                                val next = (activeQuadCorner + 1) % 4
+                                if (kotlin.math.hypot((q[i] - q[prev * 2]).toDouble(), (q[i + 1] - q[prev * 2 + 1]).toDouble()) > minGap &&
+                                    kotlin.math.hypot((q[i] - q[next * 2]).toDouble(), (q[i + 1] - q[next * 2 + 1]).toDouble()) > minGap
+                                ) currentOnQuad(q)
+                            } else if (active >= 0) {
+                                currentOnCrop(updateCrop(currentCrop, active, drag.x / dw, drag.y / dh, aspect, dw, dh))
                             }
                         },
                     )
@@ -453,6 +485,16 @@ private fun CropArea(
             listOf(Offset(l, t), Offset(r, t), Offset(l, b), Offset(r, b)).forEach {
                 drawCircle(Color.White, handleR, it)
                 drawCircle(primary, handleR - stroke, it)
+            }
+            // Four editable perspective-correction corners (TL, TR, BR, BL).
+            val q = quad
+            if (q != null && q.size == 8) {
+                val points = (0..3).map { i -> Offset(ox + q[i * 2] * dw, oy + q[i * 2 + 1] * dh) }
+                for (i in 0..3) drawLine(Color(0xFF35D6A6), points[i], points[(i + 1) % 4], strokeWidth = stroke * 1.8f)
+                points.forEach { point ->
+                    drawCircle(Color.White, handleR * 1.35f, point)
+                    drawCircle(Color(0xFF087F68), handleR, point)
+                }
             }
         }
     }
