@@ -155,6 +155,48 @@ class PdfToolsViewModel(
         }
     }
 
+    fun addPageNumbers(doc: DocumentEntity, name: String) {
+        if (_busy.value != null) return
+        if (doc.pageCount <= 0) {
+            _message.value = ToolMessage("Unlock this PDF first.", true)
+            return
+        }
+        viewModelScope.launch {
+            _busy.value = "Adding page numbers…"
+            val out = files.newDocFile("pdf")
+            try {
+                val count = pdf.addPageNumbers(repo.fileOf(doc), out)
+                val finalName = name.ifBlank { "${doc.name} (numbered)" }
+                repo.addDocument(finalName, out, "pdf", count)
+                _message.value = ToolMessage("Added page numbers to $count pages. Original unchanged.", false)
+            } catch (e: Exception) {
+                out.delete()
+                _message.value = ToolMessage(e.message ?: "Page numbers could not be added.", true)
+            } finally { _busy.value = null }
+        }
+    }
+
+    fun searchPdfText(doc: DocumentEntity, query: String) {
+        if (_busy.value != null) return
+        if (query.isBlank()) {
+            _message.value = ToolMessage("Enter a word or phrase to search.", true)
+            return
+        }
+        viewModelScope.launch {
+            _busy.value = "Searching PDF text…"
+            try {
+                val matches = pdf.searchText(repo.fileOf(doc), query)
+                _message.value = if (matches.isEmpty()) {
+                    ToolMessage("No selectable/searchable text matching “$query” was found. Scanned image-only pages need OCR text embedded in the PDF.", false)
+                } else {
+                    ToolMessage("Found “$query” on page(s): ${matches.joinToString { it.first.toString() }}", false)
+                }
+            } catch (e: Exception) {
+                _message.value = ToolMessage(e.message ?: "PDF text search failed.", true)
+            } finally { _busy.value = null }
+        }
+    }
+
     fun toImages(doc: DocumentEntity) {
         if (_busy.value != null) return
         viewModelScope.launch {
