@@ -184,6 +184,46 @@ class PdfEngine(private val context: Context) {
         PDDocument.load(file).use { it.numberOfPages }
     }
 
+    /** Creates a copy with the selected 1-based pages removed. At least one page must remain. */
+    suspend fun deletePages(input: File, pagesToDelete: List<Int>, out: File): Int = withContext(Dispatchers.IO) {
+        require(pagesToDelete.isNotEmpty()) { "Select at least one page to delete" }
+        val src = PDDocument.load(input)
+        try {
+            val total = src.numberOfPages
+            require(pagesToDelete.all { it in 1..total }) { "A selected page is out of range" }
+            require(pagesToDelete.size < total) { "A PDF must keep at least one page" }
+            pagesToDelete.distinct().sortedDescending().forEach { src.removePage(it - 1) }
+            out.outputStream().use { src.save(it) }
+            src.numberOfPages
+        } finally { src.close() }
+    }
+
+    /** Creates a copy in the exact 1-based page order supplied by the user. */
+    suspend fun reorderPages(input: File, orderedPages: List<Int>, out: File): Int = withContext(Dispatchers.IO) {
+        require(orderedPages.isNotEmpty()) { "Enter the page order" }
+        val src = PDDocument.load(input)
+        val dest = PDDocument()
+        try {
+            val total = src.numberOfPages
+            require(orderedPages.size == total && orderedPages.toSet().size == total &&
+                orderedPages.all { it in 1..total }) { "Enter every page exactly once, e.g. 3,1,2" }
+            orderedPages.forEach { dest.importPage(src.getPage(it - 1)) }
+            out.outputStream().use { dest.save(it) }
+            dest.numberOfPages
+        } finally { dest.close(); src.close() }
+    }
+
+    /** Rotates every page by the requested clockwise quarter-turns, keeping all other page data. */
+    suspend fun rotatePages(input: File, degrees: Int, out: File): Int = withContext(Dispatchers.IO) {
+        require(degrees in listOf(90, 180, 270)) { "Choose 90, 180 or 270 degrees" }
+        val doc = PDDocument.load(input)
+        try {
+            doc.pages.forEach { page -> page.rotation = (page.rotation + degrees) % 360 }
+            out.outputStream().use { doc.save(it) }
+            doc.numberOfPages
+        } finally { doc.close() }
+    }
+
     // ---------- PDF -> Images ----------
 
     /** Renders every page to a JPEG file created by [newFile]. Returns the created files. */
