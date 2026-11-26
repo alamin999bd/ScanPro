@@ -6,47 +6,51 @@ Working branch: `document-scanner-premium`
 Package/applicationId: `com.scanpro.pdfdocscanner` (keep unchanged for app updates)
 App label: **Document Scanner**
 Source version: **0.6.0 (versionCode 8)**
-
-## Target and design
-- Samsung Galaxy M12, Android 13, 6 GB RAM.
-- Offline-first: no paid API, account, cloud upload or unnecessary INTERNET permission.
-- Camera-first flow: live camera → capture → edge detection → editable crop corners → perspective correction → document filters → multi-page review → searchable PDF.
-- Process images with bounded previews and controlled export dimensions to reduce memory pressure.
+Target device: Samsung Galaxy M12, Android 13, 6 GB RAM.
 
 ## Existing source capabilities (code-level; not physical-device verified)
-- CameraX capture, flash/focus, multi-page capture and gallery import.
-- Page editor with rectangular crop handles, detected quadrilateral corner handles (manual drag), page presets, rotation, brightness and contrast. Drag gesture restart bug fixed by keeping pointer-input keys stable.
-- Filter presets: Original, Enhance, B&W Document, Grayscale, Vivid, Auto, Lighten, Darken and Color.
-- Automatic document boundary detection and automatic perspective straighten heuristic.
-- PDF/image conversion and viewer; PDF merge, extract, compression, password lock/unlock, watermark and drawn signature.
-- Document search, rename/move/delete, folders, sharing and print/open-with intents.
-- Offline Tesseract OCR integration for Bengali and English; recognized text is stored for content search. GitHub Actions downloads `ben` and `eng` traineddata.
+- CameraX live preview, autofocus tap, flash, capture, multi-page capture and gallery import.
+- Page editor: rectangular crop, aspect presets, rotation, brightness/contrast, Original/Enhance/B&W/Grayscale/Vivid/Auto/Lighten/Darken/Color filters.
+- Manual quadrilateral perspective correction handles; automatic document boundary detection is present in ImageProcessor.
+- PDF/JPG conversion, PDF viewer, merge, extract pages, PDF-to-images, rasterizing compression, password lock/unlock, watermark and drawn signature.
+- Document rename/move/delete, folders, sharing/print intents.
+- Offline Tesseract OCR code configured for Bengali + English; recognized text saved to Room and used for document-content search.
 
-## Main gaps to implement or verify
-1. Verify the new four-corner draggable perspective adjustment against varied real photos; ensure corner geometry stays valid and output orientation is correct.
-2. Improve edge detection against shadows, patterned backgrounds, low contrast and partly hidden page corners. Always allow manual correction.
-3. Camera finish flow: Retake / Crop / Add page / Finish, then multi-page review before export.
-4. Newly added filter presets need visual comparison on printed text, colored pages, shadows and low-contrast pages.
-5. Verify PDF split, page deletion/reorder/rotate, page numbers, text annotation, highlight, bookmarks, PDF text search, password-protected import, print and share. Add missing items only.
-6. Validate Bengali/English OCR, searchable PDF text layer and recognized-text search; explain OCR limits on blur/handwriting.
-7. Check touch targets, readability, clipping and memory use for Galaxy M12.
+## Audit findings — 2026-11-27
+### Confirmed in source (not yet feature-tested)
+- Scan UI: `ui/scan/ScanScreen.kt`; CameraX uses MAXIMIZE_QUALITY, tap-to-focus, flash and gallery multi-picker.
+- Scan flow: `ScanViewModel.kt` supports multi-page captures, gallery import, reorder/remove, editor, PDF save.
+- Image pipeline: `ImageProcessor.kt` applies warp → rotate → crop → look/filter; warp uses Android Matrix.setPolyToPoly (not OpenCV).
+- OCR: `OcrEngine.kt` expects bundled `ben.traineddata` and `eng.traineddata`, processes PDFs/images offline; `DocumentsViewModel.kt` stores extracted text; document search matches names and OCR text.
+- PDF tools exposed in `PdfToolsScreen.kt`: Merge, Split/Extract, PDF-to-Images, Compress, Lock, Unlock, Watermark, Sign.
+- `PdfEngine.compress()` rasterizes each page to JPEG. It may reduce file size but removes selectable/searchable text from the compressed copy; UI must disclose this limitation.
+- PDF page delete/reorder/rotate, page numbering, text annotation, highlight, bookmarks and in-PDF text search are not exposed by current PDF tools/viewer implementation; these are outstanding, not complete.
+- OCR text is stored in the app database for document search; current code does not add an invisible searchable text layer to the exported scanned PDF. This distinction must be addressed/documented.
+- Release signing falls back to debug signing if no `SCANPRO_KEYSTORE_PATH` is configured. Do not describe it as Play Store production-signed without checking secrets/signature.
 
-## Verification status
-- Repository, working branch and uploaded ZIP variants inspected. The uploaded ZIPs are older than the current working branch; do not overwrite the branch with them.
-- Source code and current GitHub Actions workflow reviewed.
-- Added filter presets and draggable quadrilateral corner adjustment in source.
-- GitHub Actions run #19 (ID `45876446027`) completed successfully on commit `5a35917f33012a62c507dc739e8934a985794ddb`; debug/release APK output verification and artifact upload steps passed. Artifact: `Document-Scanner-APK` (ID `15144354380`). This confirms CI build/package output only, not end-to-end feature correctness.
-- A persistent project master record was created at `docs/PROJECT_MASTER_RECORD_BN.md` (commit `a7af95c550abe725d479bdd509cc8ed02b5e16e8` created it; file is present on this branch).
-- No unit/instrumentation tests exist in the repository tree at this point.
+## CI evidence
+- Latest workflow run at this update: **#21**, ID `45877343244`, commit `d98de944e225e4b3951fb47fdebd0fdd077ce0d7`.
+- Status: completed / success; build job succeeded.
+- Artifact: `Document-Scanner-APK`, artifact ID `15145796196`, 68,382,545 bytes, not expired.
+- This proves CI build/package success only. It does not prove functional correctness or physical Samsung Galaxy M12 testing.
+- Workflow: https://github.com/alamin999bd/ScanPro/actions/runs/45877343244
+
+## Remaining work — priority order
+1. Verify and improve auto-edge detection and perspective-corner geometry on diverse page photos; preserve manual correction.
+2. Verify camera capture → editor → add/reorder/remove pages → save flow and gallery import; add tests.
+3. Validate filters on text, shadows, colored paper and low contrast; address bitmap lifecycle/memory.
+4. Implement/verify PDF page operations (delete/reorder/rotate) and add page numbers, annotations, highlight, bookmarks, PDF text search where technically feasible.
+5. Decide and implement an honest searchable-PDF workflow: OCR currently stores text for in-app document search, but no PDF text layer is written. Bengali font embedding/text extraction needs careful validation.
+6. Validate Bangla/English OCR traineddata presence, recognition accuracy, progress/cancellation and M12 memory behavior.
+7. Test PDF tools, password-protected import with correct password, print/share and error states.
+8. Premium UI polish, icon, accessibility, M12 performance, unit/instrumentation tests.
+9. Final CI build from latest commit, release signing verification, source ZIP. No interim APK links.
+
+## Verification boundaries
 - No physical Samsung Galaxy M12 test has been performed in this session.
+- No automated unit/instrumentation test suite was found in the repository tree during this audit.
+- A successful GitHub Actions build is not a substitute for device testing.
+- Do not distribute current artifacts as final.
 
-## Resume in the next chat
-Continue this Document Scanner project from this branch and this file. Check the latest commit and Actions run first, then work through the numbered gaps. Do not claim device testing unless it actually happens. Publish APK and source ZIP links only after a successful build/artifact is confirmed.
-
-## Changelog
-- 0.5.1: build workflow, version tracking and audit/resume notes.\n- 0.6.0: expanded offline document filter presets and added draggable perspective quadrilateral corners; fixed drag gesture restart; sequentialized Debug/Release Gradle build to avoid Room schema generation race. Build and functional verification pending.
-
-
-## 2026-11-27 project archive update
-- Added `docs/PROJECT_MASTER_RECORD_BN.md` as the permanent project handover/master file. It records scope, user constraints, repo/branch/version, implemented changes, verification evidence, remaining work, resume protocol and final delivery checklist.
-- Latest confirmed CI run #19 is successful; do not distribute its APK as final because the remaining feature and device validation work is not complete.
+## Resume protocol
+Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD and Actions run, then continue from the remaining-work list. Update both records after meaningful changes.
