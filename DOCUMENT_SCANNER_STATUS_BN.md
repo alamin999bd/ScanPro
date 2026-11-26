@@ -15,7 +15,7 @@ Source version: **0.6.0 (versionCode 8)**
 
 ## Existing source capabilities (code-level; not physical-device verified)
 - CameraX capture, flash/focus, multi-page capture and gallery import.
-- Page editor with rectangular crop handles, detected quadrilateral corner handles (manual drag), page presets, rotation, brightness and contrast.
+- Page editor with rectangular crop handles, detected quadrilateral corner handles (manual drag), page presets, rotation, brightness and contrast. Drag gesture restart bug fixed by keeping pointer-input keys stable.
 - Filter presets: Original, Enhance, B&W Document, Grayscale, Vivid, Auto, Lighten, Darken and Color.
 - Automatic document boundary detection and automatic perspective straighten heuristic.
 - PDF/image conversion and viewer; PDF merge, extract, compression, password lock/unlock, watermark and drawn signature.
@@ -41,4 +41,4 @@ Source version: **0.6.0 (versionCode 8)**
 Continue this Document Scanner project from this branch and this file. Check the latest commit and Actions run first, then work through the numbered gaps. Do not claim device testing unless it actually happens. Publish APK and source ZIP links only after a successful build/artifact is confirmed.
 
 ## Changelog
-- 0.5.1: build workflow, version tracking and audit/resume notes.\n- 0.6.0: expanded offline document filter presets and added draggable perspective quadrilateral corners; build and functional verification pending.
+- 0.5.1: build workflow, version tracking and audit/resume notes.\n- 0.6.0: expanded offline document filter presets and added draggable perspective quadrilateral corners; fixed drag gesture restart; sequentialized Debug/Release Gradle build to avoid Room schema generation race. Build and functional verification pending.
