@@ -400,7 +400,7 @@ private fun CropArea(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(dw, dh, aspect, quad) {
+                .pointerInput(dw, dh, aspect) {
                     // With a detected quadrilateral, drag its four corners directly.
                     // Otherwise use the rectangular crop handles below.
                     var active = -1
