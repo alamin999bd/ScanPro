@@ -142,3 +142,10 @@
 - PDF Tools UI only lists Merge, Split/Extract, PDF-to-Images, Compress, Lock, Unlock, Watermark, and Sign. Page delete/reorder/rotate, page numbering, text annotation, highlight, bookmarks and internal PDF text search are not currently surfaced/implemented in the audited screen/engine.
 - No unit/instrumentation tests found in inspected source tree; no physical M12 testing done.
 - Next: validate perspective geometry; implement PDF page management; then annotations/page numbers/bookmarks/text search; investigate dependable offline Bengali OCR text-layer support. Record test evidence and limitations accurately.
+
+
+## 2026-11-27 feature implementation log — PDF page management
+- Added page deletion, custom page ordering and clockwise page rotation in `PdfEngine.kt`.
+- Exposed these as PDF Tools actions via `PdfToolsViewModel.kt` and `PdfToolsScreen.kt`. Operations save a new PDF copy and preserve the original.
+- Input validation: deletion must leave at least one page; reordering must include each page exactly once; rotation limited to 90/180/270 degrees.
+- CI runs triggered by these commits were still in progress when recorded. Do not mark as verified until latest HEAD build completes successfully.
