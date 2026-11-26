@@ -54,3 +54,13 @@ Target device: Samsung Galaxy M12, Android 13, 6 GB RAM.
 
 ## Resume protocol
 Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD and Actions run, then continue from the remaining-work list. Update both records after meaningful changes.
+
+
+## 2026-11-27 audit continuation
+- Latest branch workflow run #21 (ID `45877343244`) completed successfully on commit `d98de944e225e4b3951fb47fdebd0fdd077ce0d7`; artifact `Document-Scanner-APK` (ID `15145796196`, 68,382,545 bytes) is present and not expired. This remains an interim CI artifact, not final delivery.
+- Confirmed by source inspection: CameraX capture, multi-page capture, gallery import, page removal/reorder during capture, offline Tesseract `ben+eng` OCR, recognized-text database search, PDF merge/extract/compress/lock/unlock/watermark/signature, viewer/share/export, document rename/folder operations.
+- Confirmed important limitations: current OCR persists extracted text for app-level document search and displays text, but the current PDF generation path does not embed a positioned invisible text layer; therefore scanned PDFs are not yet truly searchable/selectable internally in a standard PDF viewer. PDF compression rasterizes pages and removes selectable/searchable text. `PdfToolsScreen` currently exposes only Merge, Extract, PDF-to-Images, Compress, Lock, Unlock, Watermark, and Sign. Page delete/reorder/rotate, page numbers, text annotation, highlight, bookmarks, and PDF-internal text search are not exposed/implemented in the current tools UI.
+- Camera flow has a capture preview and page list; automatic edge detection is invoked from the editor path (must continue checking integration and geometry). Perspective correction is currently a custom four-point homography, not OpenCV; needs coordinate validation and robustness tests.
+- No repository unit/instrumentation tests found in the inspected tree; no physical Samsung Galaxy M12 test performed.
+- Next implementation priority: (1) verify/correct perspective quad mapping and editor interaction; (2) add PDF page management operations (delete/reorder/rotate) safely using PDFBox; (3) add page numbers and text/highlight annotations with font support; (4) add bookmarks and PDF text search where text exists; (5) design true OCR searchable-PDF overlay only if Bangla font and word-position extraction can be reliably bundled offline. Never claim internal PDF searchability from app-level OCR database search.
+- Latest audit branch head was `d98de944e225e4b3951fb47fdebd0fdd077ce0d7` before the next documentation commit.
