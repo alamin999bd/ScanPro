@@ -64,3 +64,10 @@ Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD
 - No repository unit/instrumentation tests found in the inspected tree; no physical Samsung Galaxy M12 test performed.
 - Next implementation priority: (1) verify/correct perspective quad mapping and editor interaction; (2) add PDF page management operations (delete/reorder/rotate) safely using PDFBox; (3) add page numbers and text/highlight annotations with font support; (4) add bookmarks and PDF text search where text exists; (5) design true OCR searchable-PDF overlay only if Bangla font and word-position extraction can be reliably bundled offline. Never claim internal PDF searchability from app-level OCR database search.
 - Latest audit branch head was `d98de944e225e4b3951fb47fdebd0fdd077ce0d7` before the next documentation commit.
+
+
+## 2026-11-27 implementation update — PDF page management
+- Added `PdfEngine.deletePages`, `reorderPages`, and `rotatePages` (copy-based operations; original PDF remains unchanged).
+- Added matching ViewModel operations with input validation, progress/error messages and new-document registration.
+- Added `Delete pages`, `Reorder pages`, and `Rotate pages` options to PDF Tools UI. Reorder requires every page exactly once; rotation supports 90/180/270 degrees clockwise.
+- GitHub Actions builds triggered by these commits are currently in progress at the time of this note; compile success is not yet confirmed. Verify the newest run against the latest branch HEAD before continuing.
