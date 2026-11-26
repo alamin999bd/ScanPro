@@ -1,75 +1,67 @@
-name: Build ScanPro APK
+name: Build Document Scanner APK
 
-# Builds the app on GitHub's free servers, so no Android Studio or PC is needed.
-# Works two ways:
-#   1) the whole project is in the repository (gradlew in the root), or
-#   2) only ScanPro-source.zip is uploaded (the workflow unzips it).
 on:
   workflow_dispatch:
   push:
-    branches: [main, master, ocr]
+    branches: [main, master, ocr, document-scanner-premium]
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
-      - name: Locate the project
+      - name: Locate project
         run: |
-          if [ -f gradlew ]; then
-            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
-          elif ls ./*.zip >/dev/null 2>&1; then
-            unzip -q -o "$(ls ./*.zip | head -1)" -d _src
-            g="$(find _src -name gradlew | head -1)"
-            if [ -z "$g" ]; then echo "gradlew not found inside the zip"; exit 1; fi
-            echo "PROJECT_DIR=$(dirname "$g")" >> "$GITHUB_ENV"
-          else
-            echo "No project found. Upload ScanPro-source.zip to the repository."
-            exit 1
-          fi
+          test -f gradlew || { echo "gradlew not found at repository root"; exit 1; }
+          echo "PROJECT_DIR=." >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - name: Download OCR language data (Bangla + English)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           mkdir -p app/src/main/assets/tessdata
-          for l in ben eng; do
-            curl -fsSL --retry 3 -o "app/src/main/assets/tessdata/$l.traineddata" \
-              "https://github.com/tesseract-ocr/tessdata_fast/raw/main/$l.traineddata"
+          for lang in ben eng; do
+            curl -fsSL --retry 3 -o "app/src/main/assets/tessdata/$lang.traineddata" "https://github.com/tesseract-ocr/tessdata_fast/raw/main/$lang.traineddata"
+            test -s "app/src/main/assets/tessdata/$lang.traineddata"
           done
-          ls -l app/src/main/assets/tessdata
+          ls -lh app/src/main/assets/tessdata
 
-      - name: Build debug APK
+      - name: Build debug and release APKs
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           chmod +x gradlew
           set -o pipefail
-          ./gradlew --no-daemon --console=plain assembleDebug 2>&1 | tee build.log
+          ./gradlew --no-daemon --console=plain assembleDebug assembleRelease 2>&1 | tee build.log
 
-      - name: Error summary (shown on the run page)
+      - name: Build error summary
         if: failure()
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          {
-            echo "## Build errors"
-            echo '```'
-            grep -E "^e: |What went wrong|Could not |Execution failed|error:|Unresolved|Caused by" -A3 build.log | head -80
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          grep -E "^e: |What went wrong" -A2 build.log | head -20 | while IFS= read -r line; do echo "::error::${line}"; done || true
+          echo "## Build errors" >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^e: |What went wrong|Could not |Execution failed|error:|Unresolved|Caused by" -A3 build.log | head -100 >> "$GITHUB_STEP_SUMMARY" || true
 
-      - name: Show the APKs
+      - name: Verify APK outputs
         working-directory: ${{ env.PROJECT_DIR }}
-        run: ls -la app/build/outputs/apk/*/*.apk
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/release/app-release.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/release/app-release.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ScanPro-APK
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/**/*.apk
+          name: Document-Scanner-APK
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+          retention-days: 30
