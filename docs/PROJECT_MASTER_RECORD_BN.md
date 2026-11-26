@@ -134,3 +134,11 @@
 - Release signing falls back to debug signing unless a release keystore path is configured; production/Play signing is not established.
 - No physical Samsung Galaxy M12 test or automated unit/instrumentation suite was confirmed during this audit.
 - Continue with scan/perspective validation, OCR/searchable-PDF design, missing PDF operations, tests and final signing/build verification.
+
+## 2026-11-27 source audit update
+- Latest confirmed workflow run #21 succeeded: `45877343244`, commit `d98de944e225e4b3951fb47fdebd0fdd077ce0d7`; artifact `Document-Scanner-APK`, ID `15145796196` (68,382,545 bytes). Do not distribute as final.
+- Source audit confirmed existing scan, gallery import, multipage capture, offline Bangla+English OCR, in-app recognized-text search, PDF tools (merge/extract/compress/lock/unlock/watermark/sign), document/folder management and viewer/share/export code.
+- Critical distinction: OCR text is stored in the app database for document search, but scanned PDF pages currently do not receive a positioned hidden text layer. So PDF-internal text selection/search is not yet supported for scanned PDFs. Compression rasterizes pages and loses text selectability/search.
+- PDF Tools UI only lists Merge, Split/Extract, PDF-to-Images, Compress, Lock, Unlock, Watermark, and Sign. Page delete/reorder/rotate, page numbering, text annotation, highlight, bookmarks and internal PDF text search are not currently surfaced/implemented in the audited screen/engine.
+- No unit/instrumentation tests found in inspected source tree; no physical M12 testing done.
+- Next: validate perspective geometry; implement PDF page management; then annotations/page numbers/bookmarks/text search; investigate dependable offline Bengali OCR text-layer support. Record test evidence and limitations accurately.
