@@ -407,6 +407,9 @@ private fun ToolPanel(
                             val bitmap = renderSignature(strokes)
                             if (bitmap != null) onSign(selected.first(), bitmap, signPage, signPos, name)
                         }
+                        Tool.DELETE_PAGES -> onDeletePages(selected.first(), pages, name)
+                        Tool.REORDER_PAGES -> onReorderPages(selected.first(), pages, name)
+                        Tool.ROTATE_PAGES -> onRotatePages(selected.first(), level, name)
                     }
                 },
                 enabled = ready,
