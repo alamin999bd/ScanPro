@@ -93,6 +93,68 @@ class PdfToolsViewModel(
         }
     }
 
+    fun deletePages(doc: DocumentEntity, rangeText: String, name: String) {
+        if (_busy.value != null) return
+        val pages = parsePageRanges(rangeText, doc.pageCount)
+        if (pages == null) {
+            _message.value = ToolMessage("Enter pages between 1 and ${doc.pageCount}, like 2-3, 5.", true)
+            return
+        }
+        viewModelScope.launch {
+            _busy.value = "Deleting pages…"
+            val out = files.newDocFile("pdf")
+            try {
+                val count = pdf.deletePages(repo.fileOf(doc), pages, out)
+                val finalName = name.ifBlank { "${doc.name} (edited)" }
+                repo.addDocument(finalName, out, "pdf", count)
+                _message.value = ToolMessage("Saved a copy with $count pages. The original is unchanged.", false)
+            } catch (e: Exception) {
+                out.delete()
+                _message.value = ToolMessage(e.message ?: "Pages could not be deleted.", true)
+            } finally { _busy.value = null }
+        }
+    }
+
+    fun reorderPages(doc: DocumentEntity, orderText: String, name: String) {
+        if (_busy.value != null) return
+        val order = orderText.split(',', ' ', ';').filter { it.isNotBlank() }.map { it.toIntOrNull() }
+        if (doc.pageCount <= 0 || order.any { it == null } || order.size != doc.pageCount ||
+            order.filterNotNull().toSet().size != doc.pageCount || order.filterNotNull().any { it !in 1..doc.pageCount }) {
+            _message.value = ToolMessage("Enter all pages exactly once, separated by commas. Example: 3,1,2", true)
+            return
+        }
+        viewModelScope.launch {
+            _busy.value = "Reordering pages…"
+            val out = files.newDocFile("pdf")
+            try {
+                val count = pdf.reorderPages(repo.fileOf(doc), order.filterNotNull(), out)
+                val finalName = name.ifBlank { "${doc.name} (reordered)" }
+                repo.addDocument(finalName, out, "pdf", count)
+                _message.value = ToolMessage("Saved the reordered $count-page copy. The original is unchanged.", false)
+            } catch (e: Exception) {
+                out.delete()
+                _message.value = ToolMessage(e.message ?: "Pages could not be reordered.", true)
+            } finally { _busy.value = null }
+        }
+    }
+
+    fun rotatePages(doc: DocumentEntity, degrees: Int, name: String) {
+        if (_busy.value != null) return
+        viewModelScope.launch {
+            _busy.value = "Rotating pages…"
+            val out = files.newDocFile("pdf")
+            try {
+                val count = pdf.rotatePages(repo.fileOf(doc), degrees, out)
+                val finalName = name.ifBlank { "${doc.name} (rotated)" }
+                repo.addDocument(finalName, out, "pdf", count)
+                _message.value = ToolMessage("Rotated all $count pages by $degrees° in a new copy.", false)
+            } catch (e: Exception) {
+                out.delete()
+                _message.value = ToolMessage(e.message ?: "Pages could not be rotated.", true)
+            } finally { _busy.value = null }
+        }
+    }
+
     fun toImages(doc: DocumentEntity) {
         if (_busy.value != null) return
         viewModelScope.launch {
