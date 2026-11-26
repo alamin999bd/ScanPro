@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.MergeType
+import androidx.compose.material.icons.rounded.RotateRight
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -215,7 +216,7 @@ private fun ToolPanel(
     var name by remember(tool) { mutableStateOf("") }
     var password by remember(tool) { mutableStateOf("") }
     var watermarkText by remember(tool) { mutableStateOf("") }
-    var level by remember(tool) { mutableIntStateOf(1) }
+    var level by remember(tool) { mutableIntStateOf(if (tool == Tool.ROTATE_PAGES) 90 else 1) }
     var strokes by remember(tool) { mutableStateOf<List<List<Offset>>>(emptyList()) }
     var signPage by remember(tool) { mutableStateOf("") }
     var signPos by remember(tool) { mutableIntStateOf(2) }
