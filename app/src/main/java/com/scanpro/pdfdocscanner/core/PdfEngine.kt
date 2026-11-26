@@ -224,6 +224,48 @@ class PdfEngine(private val context: Context) {
         } finally { doc.close() }
     }
 
+    /** Adds selectable page numbers to a new copy of the PDF. */
+    suspend fun addPageNumbers(input: File, out: File): Int = withContext(Dispatchers.IO) {
+        val doc = PDDocument.load(input)
+        try {
+            val font = PDType1Font.HELVETICA
+            val total = doc.numberOfPages
+            require(total > 0) { "This PDF has no pages" }
+            doc.pages.forEachIndexed { index, page ->
+                val box = page.mediaBox
+                val label = "${index + 1} / $total"
+                val fontSize = 9f
+                val width = font.getStringWidth(label) / 1000f * fontSize
+                PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
+                    cs.setNonStrokingColor(80, 80, 80)
+                    cs.beginText()
+                    cs.setFont(font, fontSize)
+                    cs.newLineAtOffset((box.width - width) / 2f, 18f)
+                    cs.showText(label)
+                    cs.endText()
+                }
+            }
+            out.outputStream().use { doc.save(it) }
+            total
+        } finally { doc.close() }
+    }
+
+    /** Extracts searchable text from a PDF, returning 1-based page numbers with matching text. */
+    suspend fun searchText(input: File, query: String): List<Pair<Int, String>> = withContext(Dispatchers.IO) {
+        require(query.isNotBlank()) { "Enter text to search" }
+        val doc = PDDocument.load(input)
+        try {
+            val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+            stripper.sortByPosition = true
+            (1..doc.numberOfPages).mapNotNull { pageNumber ->
+                stripper.startPage = pageNumber
+                stripper.endPage = pageNumber
+                val content = stripper.getText(doc).trim()
+                if (content.contains(query, ignoreCase = true)) pageNumber to content else null
+            }
+        } finally { doc.close() }
+    }
+
     // ---------- PDF -> Images ----------
 
     /** Renders every page to a JPEG file created by [newFile]. Returns the created files. */
