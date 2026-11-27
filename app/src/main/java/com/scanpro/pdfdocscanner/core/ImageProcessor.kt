@@ -305,17 +305,30 @@ class ImageProcessor(private val pdf: PdfEngine) {
      */
     private fun adaptiveThreshold(input: Bitmap): Bitmap {
         var src = input
-        // The integral image is an Int array: cap the pixel count so sums cannot overflow.
+        // Keep the integral sum within Int range and bound memory on mid-range phones.
         if (src.width.toLong() * src.height > MAX_THRESHOLD_PIXELS) {
-            val s = Math.sqrt(MAX_THRESHOLD_PIXELS.toDouble() / (src.width.toDouble() * src.height)).toFloat()
-            src = Bitmap.createScaledBitmap(src, (src.width * s).toInt().coerceAtLeast(1), (src.height * s).toInt().coerceAtLeast(1), true)
+            val scale = Math.sqrt(MAX_THRESHOLD_PIXELS.toDouble() / (src.width.toDouble() * src.height)).toFloat()
+            src = Bitmap.createScaledBitmap(
+                src,
+                (src.width * scale).toInt().coerceAtLeast(1),
+                (src.height * scale).toInt().coerceAtLeast(1),
+                true,
+            )
         }
         val w = src.width
         val h = src.height
-        val px = IntArray(w * h)
-        src.getPixels(px, 0, w, 0, 0, w, h)
-        if (src !== input && !src.isRecycled) src.recycle()
-        val gray = IntArray(w * h) { luma(px[it]) }
+        val gray = IntArray(w * h)
+        val row = IntArray(w)
+        try {
+            // Convert one scanline at a time; avoid a second full-size ARGB pixel array.
+            for (y in 0 until h) {
+                src.getPixels(row, 0, w, 0, y, w, 1)
+                val offset = y * w
+                for (x in 0 until w) gray[offset + x] = luma(row[x])
+            }
+        } finally {
+            if (src !== input && !src.isRecycled) src.recycle()
+        }
 
         val stride = w + 1
         val integral = IntArray(stride * (h + 1))
@@ -330,7 +343,7 @@ class ImageProcessor(private val pdf: PdfEngine) {
         val r = max(8, max(w, h) / 32)
         val black = 0xFF000000.toInt()
         val white = 0xFFFFFFFF.toInt()
-        val out = IntArray(w * h)
+        // Reuse the grayscale buffer for the binary result instead of allocating another image array.
         for (y in 0 until h) {
             val y0 = max(0, y - r)
             val y1 = min(h - 1, y + r)
@@ -343,13 +356,14 @@ class ImageProcessor(private val pdf: PdfEngine) {
                     integral[(y1 + 1) * stride + x0] +
                     integral[y0 * stride + x0]
                 val mean = sum / area
+                val index = y * w + x
                 // Darker than 88% of the local mean => ink.
-                out[y * w + x] = if (gray[y * w + x] * 100 < mean * 88) black else white
+                gray[index] = if (gray[index] * 100 < mean * 88) black else white
             }
         }
-        val res = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        res.setPixels(out, 0, w, 0, 0, w, h)
-        return res
+        return Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also {
+            it.setPixels(gray, 0, w, 0, 0, w, h)
+        }
     }
 
     // ---------- automatic page detection ----------
@@ -371,6 +385,8 @@ class ImageProcessor(private val pdf: PdfEngine) {
                 right = ((blob[2] + 1).toFloat() / f.w + padX).coerceAtMost(1f),
                 bottom = ((blob[3] + 1).toFloat() / f.h + padY).coerceAtMost(1f),
             )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Throwable) {
             null
         }
@@ -394,6 +410,8 @@ class ImageProcessor(private val pdf: PdfEngine) {
             // Reject tiny, concave, crossed, or incorrectly ordered corner sets.
             if (!PageQuadGeometry.isValid(q, minArea = 0.12f, minEdge = 0.1f)) return@withContext null
             q
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Throwable) {
             null
         }
