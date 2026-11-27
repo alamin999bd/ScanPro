@@ -84,3 +84,11 @@
 - Add a `Package full source project` step using `git archive --format=zip` on the exact checked-out HEAD; verify nonempty ZIP and run `unzip -t`.
 - Include `Document-Scanner-Source.zip` with Debug/Release APKs and signature reports in the Actions artifact. The workflow downloads OCR traineddata and Noto fonts at build time; these generated binaries are not tracked in Git and will be recreated by the documented workflow.
 - The next successful build on the new packaging commit is the final-delivery gate. Verify artifact file list and latest branch SHA before sharing anything.
+
+
+## 2026-11-27 — Video-driven PDF save fix and theme refresh
+- Reworked ScanViewModel save flow so the image-based PDF export and library registration complete before OCR starts.
+- OCR is best-effort background processing. If OCR fails, the already-saved PDF remains intact; app-level OCR text search may be unavailable for that document.
+- Primary scan export currently prioritizes reliable PDF creation over the optional invisible text layer. Standard PDF-reader text search is not guaranteed for new scan PDFs; this trade-off must be tested and addressed separately.
+- Updated brand colors to teal/coral, light/dark schemes, editor Apply affordance, and app version 0.7.0 (versionCode 9).
+- Latest code commit `471ce385368d24036f222e0c2ca8006b058bfd74`; CI not yet confirmed for this commit. No physical Android 13 QA yet.
