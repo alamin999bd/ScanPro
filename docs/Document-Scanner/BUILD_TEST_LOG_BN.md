@@ -1,16 +1,28 @@
 # Build ও Test Log — Document Scanner
 
-## Build history
-- Build #38 — run ID 45880933475 — commit b8f7b5440e1f24dbd8324673d237d239654fd40f — সফল। Debug/Release assemble, OCR data download, APK output verification ও artifact upload সম্পন্ন।
-- Build #39 — PDF bookmark engine commit 2a97a1f527c8c3643a8039314e1b450772302fba — build status যাচাই চলমান।
-- Build #40 — bookmark ViewModel commit 425406814b14065f817e3db104711249ed7de5c6 — build status যাচাই চলমান।
-- Bookmark UI commit 5cde145594b8b2360e33ec973bbf137a2d8ee988 — Build #41 (run 45931150296) সফল।
-- Text annotation engine commit 9a9a39178460606f90f4a0de5eb5f7c39533f053, ViewModel commit 1214d058e7ca246e7497844943bcf0703e51e572, UI commit 4188c52e27efee1246ed2a12f0a23eb15d1f1aa5 — Build #46–#48 চলছে; latest ফলাফল pending।
+## Latest verified CI
+- **Build #52 — SUCCESS**; run ID: `45932150003`.
+- Commit: `5f85ff19073b576a0ad23efb811b2983b2a24995` — `fix(ui): correct PDF markup callback signature`.
+- Debug ও Release APK build উভয়ই সফল; APK output verification এবং artifact upload সফল।
+- Artifact: `Document-Scanner-APK`, ID `15169275522`, size 68,434,716 bytes; not expired (2026-12-27 পর্যন্ত)।
+- এটি CI build/package success; ফিচারের বাস্তব ব্যবহার বা Samsung ফোনে পরীক্ষা সম্পন্ন হওয়ার প্রমাণ নয়।
 
-## Test limitations
-- CI compilation সফল হওয়া মানে UI action বাস্তবে সঠিকভাবে কাজ করছে—এমন নয়।
-- Samsung Galaxy M12 (SM-M127G, Android 13)-এ বাস্তব install ও interaction test এখনো সম্পন্ন বলে দাবি করা হচ্ছে না।
-- OCR accuracy, PDF page rendering, PDF bookmark navigation, export/share এবং বড় PDF memory use বাস্তব test প্রয়োজন।
+## Failed builds diagnosed and consolidated fix
+- Build #46 (run `45931442097`): `PdfEngine.kt:317` — unsupported `isOpen` property।
+- Build #47 (run `45931458281`): একই `isOpen` error।
+- Build #48 (run `45931478387`): `isOpen` error; `PdfToolsScreen.kt:147` addMarkup callback-এর argument mismatch; lines 467–468-এ `p10` parameter missing।
+- Build #49 (run `45931502573`) ও #50 (run `45931506391`): একই compile errors পুনরাবৃত্তি।
+- Build #51 (run `45932143474`): `isOpen` error বাদ গেলেও addMarkup callback mismatch এবং দুই call-site-এ `p10` missing ছিল।
+- Build #52-এর commit-এ annotation API থেকে unsupported property সরানো, callback signature/call-site arguments এক করা হয়েছে। Build #52-এর compiler log-এ Debug ও Release উভয় build সফল।
+
+## Earlier verified build
+- Build #38 — run ID `45880933475` — successful; historical CI evidence only.
+
+## Functional test limitations
+- CI compilation সফল হওয়া মানে Bookmark/Note/Highlight UI বাস্তবে সঠিকভাবে কাজ করছে—এমন নয়।
+- Samsung Galaxy M12 (SM-M127G, Android 13)-এ বাস্তব install ও interaction test এখনো সম্পন্ন হয়নি।
+- PDF viewer compatibility, note/highlight visibility, bookmark navigation, page coordinates/orientation, export/share এবং বড় PDF memory use বাস্তব test প্রয়োজন।
+- Annotation/Highlight UI-তে বর্তমানে coordinate-based area input ব্যবহৃত হয়; text-select-and-highlight interaction এখনো নেই।
 
 ## Final delivery gate
 চূড়ান্ত APK ও Source ZIP দেওয়ার আগে latest branch HEAD-এর CI সফল হতে হবে, artifact যাচাই করতে হবে, source ZIP প্রস্তুত করতে হবে এবং যতটুকু পরীক্ষা বাস্তবে করা হয়েছে তার সঠিক রিপোর্ট দিতে হবে।
