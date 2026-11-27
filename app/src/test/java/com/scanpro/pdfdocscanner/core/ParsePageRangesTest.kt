@@ -22,6 +22,9 @@ class ParsePageRangesTest {
         assertNull(parsePageRanges("abc", 5))
         assertNull(parsePageRanges("1-", 5))
         assertNull(parsePageRanges("3-2", 5))
+        assertNull(parsePageRanges("1,,2", 5))
+        assertNull(parsePageRanges(",1", 5))
+        assertNull(parsePageRanges("1,", 5))
     }
 
     @Test
