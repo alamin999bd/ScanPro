@@ -221,7 +221,7 @@ private fun ToolPanel(
     onAddPageNumbers: (DocumentEntity, String) -> Unit,
     onSearchPdfText: (DocumentEntity, String) -> Unit,
     onAddBookmark: (DocumentEntity, String, String, String) -> Unit,
-    onAddMarkup: (DocumentEntity, String, String, String, String, String, String, String, String, String) -> Unit,
+    onAddMarkup: (DocumentEntity, String, String, String, String, String, String, String, String) -> Unit,
 ) {
     // Selection order matters for merging, so keep an ordered list.
     val selected = remember(tool) { mutableStateListOf<DocumentEntity>() }
