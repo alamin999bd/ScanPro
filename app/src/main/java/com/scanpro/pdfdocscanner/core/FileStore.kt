@@ -21,6 +21,35 @@ class FileStore(private val context: Context) {
 
     fun docFile(fileName: String): File = File(docsDir, fileName)
 
+    /**
+     * Replaces an existing document with a fully-written sibling file.
+     * A backup is kept until the new file has taken the destination name, so a failed
+     * rename can restore the original PDF instead of leaving the library entry broken.
+     */
+    fun replaceDocumentAtomically(replacement: File, destination: File) {
+        require(replacement.exists() && replacement.length() > 0L) { "Replacement file is empty." }
+        require(replacement.parentFile?.canonicalFile == destination.parentFile?.canonicalFile) {
+            "Replacement must be in the documents directory."
+        }
+        val backup = File(destination.parentFile, destination.name + ".bak")
+        if (backup.exists()) throw java.io.IOException("A previous document replacement is still pending.")
+        if (destination.exists() && !destination.renameTo(backup)) {
+            throw java.io.IOException("Could not prepare the previous PDF for replacement.")
+        }
+        try {
+            if (!replacement.renameTo(destination)) {
+                throw java.io.IOException("Could not install the searchable PDF.")
+            }
+            backup.delete()
+        } catch (e: Exception) {
+            if (destination.exists()) destination.delete()
+            if (backup.exists() && !backup.renameTo(destination)) {
+                throw java.io.IOException("PDF replacement failed and the previous file could not be restored.", e)
+            }
+            throw e
+        }
+    }
+
     /** Creates a unique, not-yet-existing file in the documents directory. */
     fun newDocFile(extension: String): File =
         File(docsDir, "${UUID.randomUUID()}.${extension.trimStart('.')}")
