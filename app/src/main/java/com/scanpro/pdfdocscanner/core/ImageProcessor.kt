@@ -309,6 +309,7 @@ class ImageProcessor(private val pdf: PdfEngine) {
         val h = src.height
         val px = IntArray(w * h)
         src.getPixels(px, 0, w, 0, 0, w, h)
+        if (src !== input && !src.isRecycled) src.recycle()
         val gray = IntArray(w * h) { luma(px[it]) }
 
         val stride = w + 1
