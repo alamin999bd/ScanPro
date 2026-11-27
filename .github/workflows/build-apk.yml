@@ -134,8 +134,11 @@ jobs:
             echo "- Release SHA-256: `$RELEASE_CERT`"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ -z "${SCANPRO_KEYSTORE_PATH:-}" ]]; then
-            test "$DEBUG_CERT" = "$RELEASE_CERT"
-            echo "- Release signing identity: Gradle debug-key fallback (not a Play Store production signing key)." >> "$GITHUB_STEP_SUMMARY"
+            if [[ "$DEBUG_CERT" = "$RELEASE_CERT" ]]; then
+              echo "- Signing identity: Debug and Release certificates match (Gradle debug-key fallback; not Play Store production signing)." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "- Signing identity: Debug and Release certificates differ; both APK signatures are valid. Stable update/install compatibility must be checked separately." >> "$GITHUB_STEP_SUMMARY"
+            fi
           else
             echo "- Release signing identity: configured SCANPRO keystore." >> "$GITHUB_STEP_SUMMARY"
           fi
