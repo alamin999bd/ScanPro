@@ -304,14 +304,25 @@ class PdfEngine(private val context: Context) {
         val doc = PDDocument.load(input)
         try {
             require(pageNumber in 1..doc.numberOfPages) { "Page must be between 1 and ${doc.numberOfPages}" }
+            require(x.isFinite() && y.isFinite() && width.isFinite() && height.isFinite()) {
+                "Annotation coordinates must be finite numbers"
+            }
             val page = doc.getPage(pageNumber - 1)
-            val box = page.mediaBox
-            require(x + width <= box.width && y + height <= box.height) { "Annotation area is outside the page" }
-            val rect = PDRectangle(x, y, width, height)
+            // Coordinates entered in the UI are relative to the visible CropBox origin.
+            // PDF user-space coordinates may have a non-zero CropBox lower-left offset.
+            val box = page.cropBox
+            require(x + width <= box.width && y + height <= box.height) {
+                "Annotation area is outside the visible page area (${box.width.toInt()} × ${box.height.toInt()} pt)"
+            }
+            val left = box.lowerLeftX + x
+            val bottom = box.lowerLeftY + y
+            val rect = PDRectangle(left, bottom, width, height)
             if (kind == "NOTE") {
                 require(note.isNotBlank()) { "Enter note text" }
                 val annotation = com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationText()
-                annotation.rectangle = rect
+                // A sticky note uses a compact icon-sized rectangle; the entered area
+                // locates it without covering a large portion of the page.
+                annotation.rectangle = PDRectangle(left, bottom, min(width, 24f), min(height, 24f))
                 annotation.contents = note.trim()
                 annotation.titlePopup = "Document Scanner"
                 page.annotations.add(annotation)
@@ -321,8 +332,8 @@ class PdfEngine(private val context: Context) {
                 )
                 annotation.rectangle = rect
                 annotation.quadPoints = floatArrayOf(
-                    x, y + height, x + width, y + height,
-                    x, y, x + width, y
+                    left, bottom + height, left + width, bottom + height,
+                    left, bottom, left + width, bottom
                 )
                 annotation.color = com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor(
                     floatArrayOf(1f, 1f, 0f),
