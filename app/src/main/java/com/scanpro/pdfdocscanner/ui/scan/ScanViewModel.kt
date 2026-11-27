@@ -138,9 +138,9 @@ class ScanViewModel(
     }
 
     /**
-     * Save the PDF first, without making successful export depend on OCR.
-     * OCR is a separate best-effort background task: slow or missing language data must never
-     * leave the user stuck on "Creating PDF…" or prevent the PDF from being saved.
+     * Save a readable image PDF immediately, then upgrade it to a searchable PDF in the
+     * background. A completed image PDF always remains available if OCR or text-layer
+     * generation fails.
      */
     fun save(name: String) {
         val state = _ui.value
@@ -150,41 +150,70 @@ class ScanViewModel(
             val out = files.newDocFile("pdf")
             try {
                 val s = settings.settings.first()
-                val uris: List<Uri> = state.pages.map { Uri.fromFile(it) }
+                val sourcePages = state.pages.toList()
+                val uris: List<Uri> = sourcePages.map { Uri.fromFile(it) }
                 val finalName = name.ifBlank { FileStore.defaultScanName(if (isIdMode) "ID" else "Scan") }
+
                 if (isIdMode) {
                     pdf.idCardToPdf(uris[0], uris.getOrNull(1), out, s.pageSize, s.imageQuality)
                 } else {
-                    // Export the image-based PDF immediately. PdfEngine performs encoding on IO.
-                    // Tesseract is intentionally not in the critical path for PDF creation.
                     pdf.imagesToPdf(uris, out, s.pageSize, s.imageQuality)
                 }
 
                 require(out.exists() && out.length() > 0L) { "PDF export produced an empty file." }
                 val pageCount = if (isIdMode) 1 else uris.size
                 val id = repo.addDocument(finalName, out, "pdf", pageCount)
-                state.pages.forEach { it.delete() }
                 _ui.value = ScanUi(savedName = FileStore.sanitizeName(finalName), savedId = id)
 
-                // Keep the library's OCR-based document search, but never block PDF delivery on it.
-                if (!isIdMode) {
-                    viewModelScope.launch {
-                        try {
-                            val recognized = ocr.extractText(out, "pdf") { _, _ -> }
-                            if (recognized.isNotBlank()) repo.saveText(id, recognized)
-                        } catch (cancelled: CancellationException) {
-                            throw cancelled
-                        } catch (ignored: Exception) {
-                            // The PDF is already safely saved. OCR failure must not undo export.
+                // OCR keeps the original scratch images until the searchable replacement is ready.
+                // The first PDF is already registered and usable throughout this best-effort task.
+                viewModelScope.launch {
+                    var searchable: File? = null
+                    try {
+                        if (!isIdMode) {
+                            val ocrPages = ArrayList<OcrPage>(sourcePages.size)
+                            val recognizedText = StringBuilder()
+                            sourcePages.forEach { image ->
+                                val page = ocr.recognizeImagePage(image)
+                                ocrPages.add(page)
+                                page.words.forEach { word -> recognizedText.append(word.text).append(' ') }
+                                recognizedText.append('\n')
+                            }
+                            if (ocrPages.size == sourcePages.size && ocrPages.any { it.words.isNotEmpty() }) {
+                                searchable = files.newDocFile("pdf")
+                                pdf.imagesToSearchablePdf(
+                                    uris, ocrPages, searchable, s.pageSize, s.imageQuality
+                                )
+                                require(searchable.exists() && searchable.length() > 0L) {
+                                    "Searchable PDF generation produced an empty file."
+                                }
+                                require(pdf.pageCount(searchable) == pageCount) {
+                                    "Searchable PDF page count changed during export."
+                                }
+                                files.replaceDocumentAtomically(searchable, out)
+                                searchable = null
+                                repo.refreshDocumentSize(id, out)
+                            }
+                            val text = recognizedText.toString().trim()
+                            if (text.isNotBlank()) repo.saveText(id, text)
                         }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (ignored: Exception) {
+                        // Keep the already-saved image PDF intact if OCR/text-layer generation fails.
+                    } finally {
+                        searchable?.delete()
+                        sourcePages.forEach { it.delete() }
                     }
                 }
             } catch (cancelled: CancellationException) {
                 out.delete()
+                state.pages.forEach { it.delete() }
                 _ui.update { it.copy(saving = false, error = "PDF creation was cancelled.") }
                 throw cancelled
             } catch (e: Exception) {
                 out.delete()
+                state.pages.forEach { it.delete() }
                 _ui.update { it.copy(saving = false, error = e.message ?: "Could not save the scan") }
             }
         }
