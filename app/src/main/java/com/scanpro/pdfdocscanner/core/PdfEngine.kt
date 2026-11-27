@@ -322,7 +322,7 @@ class PdfEngine(private val context: Context) {
             val total = doc.numberOfPages
             require(total > 0) { "This PDF has no pages" }
             doc.pages.forEachIndexed { index, page ->
-                val box = page.mediaBox
+                val box = page.cropBox
                 val label = "${index + 1} / $total"
                 val fontSize = 9f
                 val width = font.getStringWidth(label) / 1000f * fontSize
@@ -330,7 +330,7 @@ class PdfEngine(private val context: Context) {
                     cs.setNonStrokingColor(80, 80, 80)
                     cs.beginText()
                     cs.setFont(font, fontSize)
-                    cs.newLineAtOffset((box.width - width) / 2f, 18f)
+                    cs.newLineAtOffset(box.lowerLeftX + (box.width - width) / 2f, box.lowerLeftY + 18f)
                     cs.showText(label)
                     cs.endText()
                 }
