@@ -5,7 +5,8 @@ data class OcrTextRun(val text: String, val usesBengaliFont: Boolean)
 
 /**
  * Splits mixed Bengali/Latin OCR text without dropping characters.
- * Neutral punctuation and whitespace stay with the preceding script run.
+ * Bengali danda (।) and double danda (॥) must use the Bengali font:
+ * they are outside U+0980..U+09FF but are commonly returned by Bengali OCR.
  */
 fun splitOcrTextByScript(text: String): List<OcrTextRun> {
     if (text.isEmpty()) return emptyList()
@@ -22,7 +23,7 @@ fun splitOcrTextByScript(text: String): List<OcrTextRun> {
 
     for (character in text) {
         val script = when (character) {
-            in '\u0980'..'\u09FF' -> true
+            in '\u0980'..'\u09FF', '\u0964', '\u0965' -> true
             in 'A'..'Z', in 'a'..'z', in '0'..'9' -> false
             else -> currentScript ?: false
         }
