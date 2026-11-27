@@ -66,14 +66,12 @@ class ImageProcessor(private val pdf: PdfEngine) {
     suspend fun preview(source: Bitmap, params: EditParams): Bitmap = withContext(Dispatchers.Default) {
         val warped = warp(source, params.quad)
         val rotated = rotate(warped, params.rotation)
+        var result: Bitmap? = null
         try {
-            applyLook(rotated, params)
+            applyLook(rotated, params).also { result = it }
         } finally {
             if (warped !== source && warped !== rotated && !warped.isRecycled) warped.recycle()
-            if (rotated !== source && !rotated.isRecycled) {
-                // applyLook returns a distinct bitmap when it creates one; keep that result alive.
-                // If it returns the input, the editor owns the source and this preview does not.
-            }
+            if (rotated !== source && rotated !== result && !rotated.isRecycled) rotated.recycle()
         }
     }
 
@@ -83,9 +81,10 @@ class ImageProcessor(private val pdf: PdfEngine) {
             var source: Bitmap? = null
             val owned = LinkedHashSet<Bitmap>()
             try {
-                source = loadBitmap(input, MAX_EXPORT_DIM) ?: return@withContext false
-                owned.add(source)
-                val warped = warp(source, params.quad).also { if (it !== source) owned.add(it) }
+                val loaded = loadBitmap(input, MAX_EXPORT_DIM) ?: return@withContext false
+                source = loaded
+                owned.add(loaded)
+                val warped = warp(loaded, params.quad).also { if (it !== loaded) owned.add(it) }
                 val rotated = rotate(warped, params.rotation).also { if (it !== warped) owned.add(it) }
                 val cropped = crop(rotated, params.crop).also { if (it !== rotated) owned.add(it) }
                 val result = applyLook(cropped, params).also { if (it !== cropped) owned.add(it) }
