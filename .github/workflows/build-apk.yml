@@ -83,11 +83,35 @@ jobs:
               )
           print(f"Font coverage verified: Bengali={len(bengali)}, Latin={len(latin)} code points")
 
-      - name: Run unit tests
+      - name: Run unit tests with full failure details
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain testDebugUnitTest --stacktrace
+          cat > "$RUNNER_TEMP/test-logging.init.gradle" <<'GRADLE'
+          allprojects {
+              tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+                  testLogging {
+                      events "failed"
+                      exceptionFormat "full"
+                      showExceptions = true
+                      showCauses = true
+                      showStackTraces = true
+                  }
+              }
+          }
+          GRADLE
+          ./gradlew --no-daemon --console=plain --init-script "$RUNNER_TEMP/test-logging.init.gradle" testDebugUnitTest --stacktrace
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Document-Scanner-Unit-Test-Reports
+          path: |
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Build debug and release APKs
         working-directory: ${{ env.PROJECT_DIR }}
