@@ -46,3 +46,10 @@
 - This font check does **not** prove PDFBox writes/extracts the hidden text layer or that Bengali shaping looks correct in a PDF viewer; those remain runtime/instrumentation QA items.
 - Static Noto Sans Bengali font and its OFL license remain provisioned by CI at the production asset path.
 - Next gate: run all unit tests, then Debug and Release APK builds, output verification and artifact upload. If any stage fails, diagnose and fix before feature work.
+
+## Camera/Gallery এবং Image Filter/Memory CI (2026-11-27)
+- Build #106 (run `45969060299`, commit `d557db97655e1e71fed0244a052a6b02c3cd581f`) — SUCCESS: gallery import/cancellation cleanup, camera startup failure handling ও capture-state safeguards; Unit Tests, Debug/Release APK, APK verification এবং artifact upload সফল।
+- Image filter/memory changes: commits `e9702053a38d8d2d70e1b5e7a38052c1cd874cf6`, `57bdad91fa0f33593683f8721b1780d9e6febd39`, `aaec49ad65926bc91a9248a47b890ece2e557999`, `1242a6f1851023b2f0459348e4c16eeb187a5b51`, `8aca7bba29cba7d6311785e6a78d17f23da19ac5` — Builds #107–#111 all SUCCESS।
+- Changes include filter intermediate bitmap recycling, editor preview/source bitmap disposal, auto-detection preview cleanup, adaptive-threshold working pixel cap reduced from 8M to 4M, and export bitmap cleanup.
+- Latest verified HEAD at this entry: `8aca7bba29cba7d6311785e6a78d17f23da19ac5`; Build #111 run `45969721491` — Unit Tests, Debug/Release, APK output verification and artifact upload succeeded.
+- CI does not verify filter visual quality or actual device memory behaviour. Samsung Galaxy M12 visual/RAM QA remains pending.
