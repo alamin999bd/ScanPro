@@ -1,0 +1,137 @@
+package com.scanpro.pdfdocscanner.core
+
+import android.content.Context
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDPage
+import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
+import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
+import com.tom_roush.pdfbox.text.PDFTextStripper
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+import java.io.File
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
+class PdfEngineOperationsTest {
+    private lateinit var context: Context
+    private lateinit var engine: PdfEngine
+    private lateinit var dir: File
+
+    @Before
+    fun setUp() {
+        context = RuntimeEnvironment.getApplication()
+        PDFBoxResourceLoader.init(context)
+        engine = PdfEngine(context)
+        dir = File(context.cacheDir, "pdf-engine-tests").apply {
+            deleteRecursively()
+            mkdirs()
+        }
+    }
+
+    @After
+    fun tearDown() {
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun mergeExtractDeleteAndReorderPreserveExpectedPageContent() = runBlocking {
+        val first = createPdf("ONE", "TWO", "THREE")
+        val second = createPdf("FOUR")
+
+        val merged = output("merged.pdf")
+        assertEquals(4, engine.merge(listOf(first, second), merged))
+        assertEquals(listOf("ONE", "TWO", "THREE", "FOUR"), pageTexts(merged))
+
+        val extracted = output("extracted.pdf")
+        assertEquals(2, engine.extractPages(merged, listOf(3, 1), extracted))
+        assertEquals(listOf("THREE", "ONE"), pageTexts(extracted))
+
+        val deleted = output("deleted.pdf")
+        assertEquals(3, engine.deletePages(merged, listOf(2), deleted))
+        assertEquals(listOf("ONE", "THREE", "FOUR"), pageTexts(deleted))
+
+        val reordered = output("reordered.pdf")
+        assertEquals(3, engine.reorderPages(first, listOf(3, 1, 2), reordered))
+        assertEquals(listOf("THREE", "ONE", "TWO"), pageTexts(reordered))
+    }
+
+    @Test
+    fun rotateChangesPageRotationWithoutChangingText() = runBlocking {
+        val source = createPdf("ROTATE-ME")
+        val rotated = output("rotated.pdf")
+        assertEquals(1, engine.rotatePages(source, 90, rotated))
+        PDDocument.load(rotated).use { assertEquals(90, it.getPage(0).rotation) }
+        assertEquals(listOf("ROTATE-ME"), pageTexts(rotated))
+    }
+
+    @Test
+    fun lockAndUnlockRequireTheCorrectPasswordAndPreservePages() = runBlocking {
+        val source = createPdf("PRIVATE-TEXT", "SECOND-PAGE")
+        val locked = output("locked.pdf")
+        assertEquals(2, engine.protect(source, locked, "test-pass"))
+        assertTrue(engine.isPasswordProtected(locked))
+
+        val unlocked = output("unlocked.pdf")
+        assertEquals(2, engine.unlock(locked, unlocked, "test-pass"))
+        assertFalse(engine.isPasswordProtected(unlocked))
+        assertEquals(listOf("PRIVATE-TEXT", "SECOND-PAGE"), pageTexts(unlocked))
+    }
+
+    @Test
+    fun watermarkPageNumbersAndBookmarkAreWrittenToThePdf() = runBlocking {
+        val source = createPdf("VISIBLE-CONTENT", "SECOND-CONTENT")
+        val watermarked = output("watermarked.pdf")
+        assertEquals(2, engine.watermark(source, watermarked, "QA WATERMARK"))
+        assertTrue(pageTexts(watermarked).all { it.contains("QA WATERMARK") })
+
+        val numbered = output("numbered.pdf")
+        assertEquals(2, engine.addPageNumbers(watermarked, numbered))
+        assertTrue(pageTexts(numbered).all { it.contains("/") })
+
+        val bookmarked = output("bookmarked.pdf")
+        assertEquals(2, engine.addBookmark(numbered, bookmarked, "Second page", 2))
+        assertEquals(listOf(PdfBookmark("Second page", 2)), engine.readBookmarks(bookmarked))
+    }
+
+    private fun createPdf(vararg labels: String): File {
+        val file = output("fixture-${labels.size}-${labels.first()}.pdf")
+        PDDocument().use { document ->
+            labels.forEach { label ->
+                val page = PDPage()
+                document.addPage(page)
+                PDPageContentStream(document, page).use { stream ->
+                    stream.beginText()
+                    stream.setFont(PDType1Font.HELVETICA, 16f)
+                    stream.newLineAtOffset(72f, 720f)
+                    stream.showText(label)
+                    stream.endText()
+                }
+            }
+            file.outputStream().use { document.save(it) }
+        }
+        return file
+    }
+
+    private fun pageTexts(file: File): List<String> =
+        PDDocument.load(file).use { document ->
+            (1..document.numberOfPages).map { page ->
+                PDFTextStripper().apply {
+                    startPage = page
+                    endPage = page
+                    sortByPosition = true
+                }.getText(document).trim()
+            }
+        }
+
+    private fun output(name: String) = File(dir, name)
+}
