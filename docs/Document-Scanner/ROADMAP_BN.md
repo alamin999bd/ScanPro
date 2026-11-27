@@ -24,3 +24,11 @@
 - Camera/Gallery/Multi-page safeguards merged; Build #106 passed. Real camera capture and gallery behavior still need physical-device testing.
 - Filter pipeline bitmap ownership and temporary memory cleanup improved; adaptive threshold capped to a 4M-pixel working bitmap; Builds #107–#111 passed.
 - Do not consider image filters visually validated until sample-image comparisons and Samsung Galaxy M12 memory/performance QA are completed.
+
+
+## 2026-11-27 progress — latest verified Build #154
+- Serial 6 implementation now includes PDF outline bookmark navigation, selectable-text search with page navigation, supported note/highlight annotation overlays, CropBox/rotation coordinate normalization and geometry tests.
+- Serial 7 started: dynamic viewer header measurement replaces fixed top padding; PDF page rendering width is capped at 1600 px; cache is checked again inside the render lock to avoid duplicate concurrent rendering; failed bitmap rendering recycles the temporary bitmap.
+- Latest HEAD 181ab3df369da6ad3b2b5a84d767df15f1ce6297 Build #154 passed all CI stages, including unit tests, Debug/Release builds, APK verification and artifact upload.
+- Remaining Serial 7 work: inspect and tune other large-image/PDF rendering paths, list/editor scrolling and low-memory cleanup; avoid claiming M12 performance until physical-device tests.
+- Then Serial 8 automated regression expansion, Serial 9 release-signing verification, Serial 10 final build and complete source ZIP.
