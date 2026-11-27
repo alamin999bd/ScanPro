@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.scanpro.pdfdocscanner.core.FileStore
 import com.scanpro.pdfdocscanner.core.PdfEngine
 import com.scanpro.pdfdocscanner.core.OcrEngine
+import com.scanpro.pdfdocscanner.core.OcrPage
 import com.scanpro.pdfdocscanner.data.DocumentRepository
 import com.scanpro.pdfdocscanner.data.SettingsRepository
 import kotlinx.coroutines.CancellationException
