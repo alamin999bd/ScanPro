@@ -8,6 +8,7 @@ import com.scanpro.pdfdocscanner.core.PdfEngine
 import com.scanpro.pdfdocscanner.core.OcrEngine
 import com.scanpro.pdfdocscanner.data.DocumentRepository
 import com.scanpro.pdfdocscanner.data.SettingsRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,8 @@ class ScanViewModel(
 
     private val maxPages = if (isIdMode) 2 else Int.MAX_VALUE
 
+    private var galleryImportInProgress = false
+
     private val _ui = MutableStateFlow(ScanUi())
     val ui: StateFlow<ScanUi> = _ui
 
@@ -59,33 +62,43 @@ class ScanViewModel(
 
     /** Copies gallery images into scratch files so they can be edited like camera captures. */
     fun addFromGallery(uris: List<Uri>) {
-        if (uris.isEmpty()) return
+        if (uris.isEmpty() || galleryImportInProgress) return
+        galleryImportInProgress = true
         viewModelScope.launch {
-            val room = maxPages - _ui.value.pages.size
-            val accepted = uris.take(room.coerceAtLeast(0))
+            val accepted = uris.take((maxPages - _ui.value.pages.size).coerceAtLeast(0))
             val copied = ArrayList<File>()
             var failed = 0
-            withContext(Dispatchers.IO) {
-                accepted.forEach { uri ->
-                    val dest = files.newTempFile("jpg")
-                    try {
-                        files.copyTo(uri, dest)
-                        copied.add(dest)
-                    } catch (ignored: Exception) {
-                        dest.delete()
-                        failed++
+            try {
+                withContext(Dispatchers.IO) {
+                    accepted.forEach { uri ->
+                        val dest = files.newTempFile("jpg")
+                        try {
+                            files.copyTo(uri, dest)
+                            copied.add(dest)
+                        } catch (cancelled: CancellationException) {
+                            dest.delete()
+                            throw cancelled
+                        } catch (ignored: Exception) {
+                            dest.delete()
+                            failed++
+                        }
                     }
                 }
-            }
-            _ui.update {
-                it.copy(
-                    pages = it.pages + copied,
-                    error = when {
-                        failed > 0 -> "$failed image(s) could not be read."
-                        uris.size > accepted.size -> "Only ${accepted.size} image(s) were added (ID scan holds front and back)."
-                        else -> null
-                    },
-                )
+                _ui.update { state ->
+                    state.copy(
+                        pages = state.pages + copied,
+                        error = when {
+                            failed > 0 -> "$failed image(s) could not be read."
+                            uris.size > accepted.size -> "Only ${accepted.size} image(s) were added (ID scan holds front and back)."
+                            else -> null
+                        },
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                copied.forEach { it.delete() }
+                throw cancelled
+            } finally {
+                galleryImportInProgress = false
             }
         }
     }
