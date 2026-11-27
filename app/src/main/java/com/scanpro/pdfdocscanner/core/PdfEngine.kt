@@ -745,7 +745,7 @@ class PdfEngine(private val context: Context) {
     }
 
     companion object {
-        private const val MAX_IMAGE_DIM = 2480 // ~A4 at 300 dpi
+        const val MAX_IMAGE_DIM = 2480 // ~A4 at 300 dpi
     }
 }
 
