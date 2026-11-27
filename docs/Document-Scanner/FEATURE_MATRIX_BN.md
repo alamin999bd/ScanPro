@@ -53,3 +53,12 @@
 - Important trade-off: this main save route no longer writes the invisible OCR text layer. OCR text is still attempted for in-app document search. Standard PDF-reader searchability of newly scanned PDFs is not currently guaranteed.
 - Theme palette changed to teal/coral, and editor Apply action is now explicitly labelled.
 - Latest code HEAD `471ce385368d24036f222e0c2ca8006b058bfd74`; build status not yet confirmed. Device QA pending.
+
+
+
+## 2026-11-27 — Background searchable-PDF recovery
+- Scan Save now writes and registers a regular image PDF first so OCR is no longer on the initial Save critical path.
+- Original scan images are retained while background OCR creates per-page hOCR geometry; when OCR produces word results, a searchable PDF candidate is generated and checked for non-empty output and matching page count.
+- A same-directory backup/rename replacement installs the searchable PDF while preserving the already-saved image PDF if OCR or replacement fails.
+- Document library size metadata is refreshed after a successful replacement. Recognized text is stored for in-app document search.
+- This is source-level implementation only until the latest branch HEAD CI build passes. Samsung Galaxy M12 Android 13 testing remains required; OCR background CPU/RAM use and replacement behavior have not yet been measured on-device.
