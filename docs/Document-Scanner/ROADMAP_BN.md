@@ -46,3 +46,9 @@
 - Important signing limitation: Release currently uses Gradle debug-key fallback when no persistent keystore is configured. It is not Play Store production-signed; do not promise seamless updates across clean CI runs.
 - Serial 10: final workflow must package the tracked source at the same commit as the APK, validate the ZIP, and upload it alongside both APK variants and signing reports. The workflow-provisioned OCR/font assets are downloaded during build and are not tracked source files.
 - Do not deliver until the new packaging commit itself has a fully successful workflow and the artifact file list is verified. Physical Samsung Galaxy M12 QA remains pending.
+
+
+## 2026-11-27 — PDF Tools audit update
+- Build #198: PDF-to-images page records are registered in one batch to avoid partial Library entries if registration fails.
+- Build #199: PDF Tools memory-exhaustion handling and partial-output cleanup added; Unit Tests, Debug/Release builds, APK verification and source ZIP packaging passed.
+- Next: sample-PDF regression checks for merge/extract/delete/reorder/rotate/optimize/lock/unlock/watermark/sign/annotations, followed by Samsung Galaxy M12 Android 13 testing. No device QA is claimed.

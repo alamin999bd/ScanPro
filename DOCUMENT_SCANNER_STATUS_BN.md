@@ -117,3 +117,10 @@ Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD
 - App version bumped to 0.7.0 / versionCode 9; applicationId remains unchanged; minSdk 26 and targetSdk 35 remain compatible in principle with Android 13 (API 33).
 - Latest code commit: `471ce385368d24036f222e0c2ca8006b058bfd74`. GitHub combined status currently reports no status entries; CI for this new HEAD has not yet been verified. Do not distribute a new APK until a successful build for the latest HEAD is confirmed.
 - Samsung Galaxy M12 physical-device QA remains pending. No claim of device testing is made.
+
+
+## 2026-11-27 — Latest verified PDF Tools status
+- Build #198 — run 46004432065, commit `99cfa549480f53a3c606918a97b2cf6e65969f44`: SUCCESS; PDF-to-images Library registration is batched atomically.
+- Build #199 — run 46005228410, commit `7acbfa8966ab2945d1d6151b7fc67785fe474444`: SUCCESS; memory exhaustion handling and partial-output cleanup added across PDF Tools.
+- Build #199 passed Unit Tests, Debug/Release APK builds, APK output/signature verification and source ZIP packaging. CI does not prove physical device behavior.
+- Next gate: sample PDF regression tests and Samsung Galaxy M12 Android 13 hands-on QA. Release signing still uses debug-key fallback unless a persistent user-owned keystore is configured securely.

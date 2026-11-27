@@ -62,3 +62,10 @@
 - A same-directory backup/rename replacement installs the searchable PDF while preserving the already-saved image PDF if OCR or replacement fails.
 - Document library size metadata is refreshed after a successful replacement. Recognized text is stored for in-app document search.
 - This is source-level implementation only until the latest branch HEAD CI build passes. Samsung Galaxy M12 Android 13 testing remains required; OCR background CPU/RAM use and replacement behavior have not yet been measured on-device.
+
+
+## PDF Tools — 2026-11-27 audit update
+- PDF-to-images now registers the exported page set atomically in the Library; Build #198 passed.
+- PDF Tools now handles memory exhaustion with user-facing errors and partial-output cleanup; Build #199 passed.
+- Optimize PDF is a text-preserving PDF rewrite, not raster recompression. It verifies page count and extracted text, and only keeps a smaller output; it may not reduce image-heavy PDFs.
+- Remaining: sample-file tests for each operation, rotated/CropBox/large-file cases, and real Samsung Galaxy M12 QA. CI success is not functional device QA.

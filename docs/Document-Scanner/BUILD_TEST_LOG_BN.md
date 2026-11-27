@@ -101,3 +101,10 @@
 - App config on the branch: versionName `0.7.0`, versionCode `9`, minSdk `26`, targetSdk `35`; Android 13 (API 33) is within the supported SDK range, subject to device QA.
 - This commit is a CI trigger and status-log update only. Do not treat CI success as proof that PDF creation, Enhance, filters, navigation or other controls work on a physical device.
 - Required next checks: latest-HEAD CI tests/build/signature/artifact validation, followed by hands-on Samsung Galaxy M12 Android 13 functional testing. OCR text-layer behavior for newly saved scans remains a known trade-off and must be validated separately.
+
+
+## 2026-11-27 — PDF Tools audit and Build #199
+- Build #198 (run 46004432065, commit 99cfa549480f53a3c606918a97b2cf6e65969f44): SUCCESS. PDF-to-images batch Library registration now uses one DAO insert transaction path; partial DB registration is avoided.
+- Build #199 (run 46005228410, commit 7acbfa8966ab2945d1d6151b7fc67785fe474444): SUCCESS. Unit Tests, Debug/Release APK builds, APK verification, signing checks and source ZIP packaging all passed.
+- Added OutOfMemoryError handling to PDF Tools operations so oversized documents report a clear error and partial output is cleaned rather than leaving corrupt files. Search reports a size-related error; PDF-to-image export removes generated pages on failure.
+- This is CI/code-level validation only. Sample PDF QA and physical Samsung Galaxy M12 testing remain pending.
