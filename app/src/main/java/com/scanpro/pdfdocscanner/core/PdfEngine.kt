@@ -596,8 +596,9 @@ class PdfEngine(private val context: Context) {
             gs.setNonStrokingAlphaConstant(0.25f)
             val unitWidth = if (latin) font.getStringWidth(text) / 1000f else 0f
             val picture = if (latin) null else {
-                watermarkBitmap = renderTextBitmap(text)
-                LosslessFactory.createFromImage(doc, watermarkBitmap)
+                val rendered = renderTextBitmap(text)
+                watermarkBitmap = rendered
+                LosslessFactory.createFromImage(doc, rendered)
             }
             val aspect = if (picture == null) 1f else picture.height.toFloat() / picture.width
             for (page in doc.pages) {
