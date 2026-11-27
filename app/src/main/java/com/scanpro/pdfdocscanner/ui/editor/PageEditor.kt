@@ -131,10 +131,12 @@ fun PageEditorScreen(
         }
     }
 
+    val latestSource by rememberUpdatedState(source)
+    val latestShown by rememberUpdatedState(shown)
     DisposableEffect(file) {
         onDispose {
-            val original = source
-            val preview = shown
+            val original = latestSource
+            val preview = latestShown
             if (preview != null && preview !== original && !preview.isRecycled) preview.recycle()
             if (original != null && !original.isRecycled) original.recycle()
         }
