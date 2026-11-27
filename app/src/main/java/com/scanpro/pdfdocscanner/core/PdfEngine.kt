@@ -86,7 +86,10 @@ class PdfEngine(private val context: Context) {
         require(images.size == ocrPages.size) { "OCR page count does not match the scan" }
         val doc = PDDocument()
         try {
-            val font = context.assets.open("fonts/NotoSansBengali.ttf").use {
+            val bengaliFont = context.assets.open("fonts/NotoSansBengali.ttf").use {
+                PDType0Font.load(doc, it)
+            }
+            val latinFont = context.assets.open("fonts/NotoSans-Regular.ttf").use {
                 PDType0Font.load(doc, it)
             }
             images.forEachIndexed { index, uri ->
@@ -115,7 +118,8 @@ class PdfEngine(private val context: Context) {
                             stream.beginText()
                             stream.setRenderingMode(RenderingMode.NEITHER)
                             placements.forEachIndexed { index, placement ->
-                                stream.setFont(font, placement.fontSize)
+                                val usesBengali = placement.text.any { it in '\u0980'..'\u09FF' }
+                                stream.setFont(if (usesBengali) bengaliFont else latinFont, placement.fontSize)
                                 stream.setTextMatrix(
                                     com.tom_roush.pdfbox.util.Matrix.getTranslateInstance(
                                         placement.x, placement.baselineY
