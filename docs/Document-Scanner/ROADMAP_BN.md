@@ -39,3 +39,10 @@
 - Serial 8: added numeric edge-case regression tests for OCR PDF dimensions and perspective quad validation. Builds #161–#164 all passed; latest verified HEAD before signing workflow enhancement was 2a198bbd586ddd73efbf146d6b3ecb1598ec2530. Nine core JVM test files are present. UI/instrumentation and device tests are not claimed.
 - Serial 9: CI now verifies Debug and Release APK signatures using Android `apksigner` and records SHA-256 certificate fingerprints. With no configured `SCANPRO_KEYSTORE_PATH`, Release falls back to the ephemeral runner's debug key and is not Play Store-ready or guaranteed update-compatible across separate CI runs. A persistent private release keystore must be configured securely before production distribution.
 - Serial 10 remains: final latest-HEAD build, final APK artifact and full source ZIP.
+
+
+## 2026-11-27 final gate update
+- Serial 9 CI signature validation is complete: Build #167 (run 45985668334, commit 6205d86a06319e8cba4a5cc940617a14f9452631) passed both Debug and Release `apksigner verify` checks, unit tests and APK builds.
+- Important signing limitation: Release currently uses Gradle debug-key fallback when no persistent keystore is configured. It is not Play Store production-signed; do not promise seamless updates across clean CI runs.
+- Serial 10: final workflow must package the tracked source at the same commit as the APK, validate the ZIP, and upload it alongside both APK variants and signing reports. The workflow-provisioned OCR/font assets are downloaded during build and are not tracked source files.
+- Do not deliver until the new packaging commit itself has a fully successful workflow and the artifact file list is verified. Physical Samsung Galaxy M12 QA remains pending.

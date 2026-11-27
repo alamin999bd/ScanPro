@@ -147,6 +147,14 @@ jobs:
             echo "- Release signing identity: Gradle debug-key fallback (not a Play Store production signing key)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Package full source project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          git archive --format=zip --output Document-Scanner-Source.zip HEAD
+          test -s Document-Scanner-Source.zip
+          unzip -t Document-Scanner-Source.zip
+          ls -lh Document-Scanner-Source.zip
+
       - uses: actions/upload-artifact@v4
         with:
           name: Document-Scanner-APK
@@ -155,5 +163,6 @@ jobs:
             app/build/outputs/apk/release/app-release.apk
             debug-signing-report.txt
             release-signing-report.txt
+            Document-Scanner-Source.zip
           if-no-files-found: error
           retention-days: 30

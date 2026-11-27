@@ -166,3 +166,12 @@
 - CI now runs Android apksigner against Debug and Release APKs, verifies certificate SHA-256 fingerprints and stores the reports in the APK artifact.
 - Current Gradle release signing config falls back to the debug signing config when SCANPRO_KEYSTORE_PATH is absent. No production signing keystore is provisioned by this workflow. Therefore the Release APK is signature-valid but not Play Store production-signed; stable update signing requires a persistent user-controlled keystore stored only in GitHub Secrets.
 - Serial 10 remains final latest-HEAD build, APK/source ZIP packaging and final delivery. No physical Samsung Galaxy M12 test has been performed.
+
+
+## 2026-11-27 — Serial 9 completion and Serial 10 packaging gate
+- Build #167 run `45985668334`, commit `6205d86a06319e8cba4a5cc940617a14f9452631` succeeded on latest branch HEAD. Unit tests, Debug/Release builds, APK output checks, apksigner verification for both APKs and artifact upload all passed.
+- Artifact `Document-Scanner-APK`, ID `15190593542`, 69,293,299 bytes. It is an interim artifact and must not be sent as final.
+- Release APK uses Gradle debug-key fallback because no persistent `SCANPRO_KEYSTORE_PATH` is configured. Signature-valid is not equivalent to Play Store production-signed; stable updates need a persistent user-owned keystore held only in GitHub Secrets.
+- Serial 10 workflow change: package tracked project source with `git archive`, validate ZIP integrity and upload `Document-Scanner-Source.zip` alongside Debug/Release APKs and signing reports. CI-provisioned OCR traineddata and font binaries are downloaded during workflow rather than committed; source ZIP includes the workflow that recreates them.
+- Trigger a new build after this packaging/docs commit. Verify latest branch HEAD equals the successful build SHA and inspect the artifact file listing before final delivery. Never send an older artifact.
+- No physical Samsung Galaxy M12 QA has been performed in this session.

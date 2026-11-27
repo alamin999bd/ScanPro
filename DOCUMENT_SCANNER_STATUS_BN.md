@@ -96,3 +96,14 @@ Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD
 - Serial 8 automated regression expansion includes invalid/non-finite OCR PDF dimensions and invalid perspective geometry threshold tests. Nine core JVM test files exist; Builds #161–#164 passed.
 - Serial 9 workflow update adds apksigner validation for both APKs and records SHA-256 signing certificate fingerprints. If no SCANPRO_KEYSTORE_PATH is configured, Release is signed with Gradle's debug-key fallback; this is not a production Play Store signing identity and may not support updates across fresh CI runners.
 - Serial 10: after the signing-verification workflow passes on latest HEAD, create the final APK artifact and complete source ZIP. Physical Samsung Galaxy M12 testing remains for the user after delivery.
+
+
+## 2026-11-27 — Serial 9 verified; Serial 10 final packaging
+- Build #167 — run ID `45985668334`, commit `6205d86a06319e8cba4a5cc940617a14f9452631`: SUCCESS. Latest branch HEAD matched this exact commit at verification time.
+- All workflow steps passed: Bengali/English OCR data and font provisioning, glyph coverage, Unit Tests, Debug/Release APK builds, APK output checks, Android `apksigner` signature verification and artifact upload.
+- Artifact: `Document-Scanner-APK`, ID `15190593542`, size 69,293,299 bytes; not expired at verification. This is an interim APK artifact, not final delivery.
+- Signature reports are now printed into CI logs and fingerprints are extracted when the tool output exposes them. Both APK signatures passed `apksigner verify`. With no `SCANPRO_KEYSTORE_PATH`, Release uses Gradle debug-key fallback; it is not Play Store production-signed and update compatibility across clean CI runners is not guaranteed.
+- Serial 9 CI signature-verification gate is complete. A persistent release keystore must be user-controlled and stored only in GitHub Secrets before production distribution; do not commit keystore/private passwords.
+- Serial 10 packaging change: add `git archive` ZIP of tracked source at the exact checked-out commit, validate ZIP integrity, and include it in the same final GitHub Actions artifact with Debug/Release APKs and signing reports. CI-provisioned OCR traineddata and font binaries are downloaded during workflow and are intentionally not committed as source; build workflow recreates them.
+- Next gate: commit packaging/docs update, run a fresh workflow on that exact new HEAD, verify every job step and artifact contains both APKs, signing reports and `Document-Scanner-Source.zip`. If any step fails, inspect logs and rebuild latest HEAD. No final links until this gate passes.
+- No physical Samsung Galaxy M12 testing has been performed in this session; device QA remains a separate user-side step after final delivery.

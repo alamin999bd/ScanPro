@@ -39,3 +39,9 @@
 
 | Automated regression tests | 9 core JVM test files covering OCR parsing/geometry, searchable text layer, page-quad geometry, PDF ranges/order, markup geometry, page-markup normalization and text search; new non-finite/invalid-threshold cases added | CI unit tests passed through Build #164; UI/instrumentation and physical-device QA remain pending |
 | APK signing verification | CI now verifies Debug/Release APK signatures and records SHA-256 certificate fingerprints with apksigner | Release uses debug-key fallback unless a secure SCANPRO keystore is configured; not Play Store production signing |
+
+
+## 2026-11-27 — Final CI gates
+| Release signature verification | Debug ও Release APK উভয়ের `apksigner verify` validation CI-তে পাস | Build #167 (run 45985668334) SUCCESS; Release uses debug-key fallback, not Play Store production signing |
+| Final source archive | Workflow now packages tracked project at checked-out HEAD with `git archive`, checks ZIP integrity and includes source ZIP in artifact | New final packaging Build pending; do not mark final until its artifact is inspected |
+| Samsung Galaxy M12 device QA | এই সেশনে বাস্তব ডিভাইসে পরীক্ষা হয়নি | Pending; CI success দিয়ে device QA বোঝায় না |

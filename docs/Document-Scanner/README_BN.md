@@ -32,3 +32,7 @@
 3. CI build success-কে feature QA বা বাস্তব ফোনে পরীক্ষার প্রমাণ বলা যাবে না।
 4. চূড়ান্ত APK এবং source ZIP প্রস্তুত না হওয়া পর্যন্ত পরীক্ষামূলক APK ব্যবহারকারীর কাছে পাঠানো হবে না।
 5. Samsung Galaxy M12 (Android 13) বাস্তব ডিভাইস পরীক্ষা আলাদা করে নথিভুক্ত করতে হবে।
+
+
+## Source ZIP ও reproducible build
+Final workflow-এ `Document-Scanner-Source.zip` tracked source tree-এর exact checked-out commit থেকে তৈরি হয় এবং `unzip -t` দিয়ে integrity যাচাই হয়। OCR-এর `ben.traineddata`, `eng.traineddata` এবং Noto Sans font assets CI workflow build-এর সময় download করে app assets-এ বসায়; এগুলো generated build inputs, Git source archive-এ tracked binary হিসেবে রাখা হয় না। Source ZIP-এ workflow ও build instructions থাকবে, যাতে একই provisioning/build process পুনরায় চালানো যায়।

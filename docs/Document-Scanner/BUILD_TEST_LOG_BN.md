@@ -71,3 +71,16 @@
 - Builds #161–#164 (runs 45983560847, 45983564837, 45983568778, 45983573696) all passed; Build #164 matches branch HEAD 2a198bbd586ddd73efbf146d6b3ecb1598ec2530. Unit tests, Bengali/Latin font coverage, Debug/Release APK builds, APK output verification and artifact upload succeeded.
 - Serial 8 automated unit regression CI gate is complete. This does not represent automated UI/instrumentation tests or physical-device QA.
 - Serial 9: added an `apksigner` verification step to CI. It validates both APK signatures, records certificate SHA-256 fingerprints, and checks that the release APK uses the expected certificate. When `SCANPRO_KEYSTORE_PATH` is absent, Gradle intentionally falls back to its debug key; that APK is not Play Store production-signed. Never store a private keystore in the repository.
+
+
+## Serial 9 — Build #167 signature verification (2026-11-27)
+- Build #165 (run 45984491790) and #166 (run 45985209585) failed in the signing-report step. #166 logs indicated the fingerprint parser was not reliably matching the apksigner output.
+- Workflow correction commit: `6205d86a06319e8cba4a5cc940617a14f9452631`. It prints the complete Debug/Release apksigner reports and uses flexible case-insensitive SHA-256 digest extraction; fingerprint extraction is informational, while the `apksigner verify` command is the signature validity gate.
+- Build #167 (run 45985668334) — SUCCESS on commit `6205d86a06319e8cba4a5cc940617a14f9452631`. Unit Tests, Debug/Release APK, output verification, Debug/Release signature verification and artifact upload all passed.
+- Artifact `Document-Scanner-APK`, ID `15190593542`, size 69,293,299 bytes. Build URL: https://github.com/alamin999bd/ScanPro/actions/runs/45985668334
+- Release signing identity is Gradle debug-key fallback because no `SCANPRO_KEYSTORE_PATH` is configured. This is not Play Store production signing and cannot guarantee updates across fresh CI runners. No private signing material is stored in the repository.
+
+## Serial 10 — final packaging workflow preparation (2026-11-27)
+- Add a `Package full source project` step using `git archive --format=zip` on the exact checked-out HEAD; verify nonempty ZIP and run `unzip -t`.
+- Include `Document-Scanner-Source.zip` with Debug/Release APKs and signature reports in the Actions artifact. The workflow downloads OCR traineddata and Noto fonts at build time; these generated binaries are not tracked in Git and will be recreated by the documented workflow.
+- The next successful build on the new packaging commit is the final-delivery gate. Verify artifact file list and latest branch SHA before sharing anything.
