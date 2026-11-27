@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scanpro.pdfdocscanner.core.FileStore
 import com.scanpro.pdfdocscanner.core.PdfEngine
+import com.scanpro.pdfdocscanner.core.OcrEngine
 import com.scanpro.pdfdocscanner.data.DocumentRepository
 import com.scanpro.pdfdocscanner.data.SettingsRepository
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,7 @@ class ScanViewModel(
     private val repo: DocumentRepository,
     private val files: FileStore,
     private val pdf: PdfEngine,
+    private val ocr: OcrEngine,
     private val settings: SettingsRepository,
     private val isIdMode: Boolean,
 ) : ViewModel() {
@@ -138,7 +140,10 @@ class ScanViewModel(
                 if (isIdMode) {
                     pdf.idCardToPdf(uris[0], uris.getOrNull(1), out, s.pageSize, s.imageQuality)
                 } else {
-                    pdf.imagesToPdf(uris, out, s.pageSize, s.imageQuality)
+                    // OCR is performed one page at a time to keep peak memory use suitable for
+                    // entry-level Android devices. Empty OCR results still preserve the scan.
+                    val ocrPages = state.pages.map { ocr.recognizeImagePage(it) }
+                    pdf.imagesToSearchablePdf(uris, ocrPages, out, s.pageSize, s.imageQuality)
                 }
                 val pageCount = if (isIdMode) 1 else uris.size
                 val id = repo.addDocument(finalName, out, "pdf", pageCount)
