@@ -95,7 +95,7 @@ class PdfEngineOperationsTest {
         val source = createPdf("VISIBLE-CONTENT", "SECOND-CONTENT")
         val watermarked = output("watermarked.pdf")
         assertEquals(2, engine.watermark(source, watermarked, "QA WATERMARK"))
-        val watermarkedTexts = pageTexts(watermarked)
+        val watermarkedTexts = pageTexts(watermarked, sortByPosition = false)
         assertTrue(
             "Expected both watermark words on every page; extracted text: $watermarkedTexts",
             watermarkedTexts.all { it.contains("QA") && it.contains("WATERMARK") }
@@ -134,13 +134,13 @@ class PdfEngineOperationsTest {
         return file
     }
 
-    private fun pageTexts(file: File): List<String> =
+    private fun pageTexts(file: File, sortByPosition: Boolean = true): List<String> =
         PDDocument.load(file).use { document ->
             (1..document.numberOfPages).map { page ->
                 PDFTextStripper().apply {
                     startPage = page
                     endPage = page
-                    sortByPosition = true
+                    sortByPosition = sortByPosition
                 }.getText(document).trim()
             }
         }
