@@ -32,3 +32,10 @@
 - Latest HEAD 181ab3df369da6ad3b2b5a84d767df15f1ce6297 Build #154 passed all CI stages, including unit tests, Debug/Release builds, APK verification and artifact upload.
 - Remaining Serial 7 work: inspect and tune other large-image/PDF rendering paths, list/editor scrolling and low-memory cleanup; avoid claiming M12 performance until physical-device tests.
 - Then Serial 8 automated regression expansion, Serial 9 release-signing verification, Serial 10 final build and complete source ZIP.
+
+
+## 2026-11-27 — Serial 7/8/9 progress
+- Serial 7: document-content search now debounces input by 250 ms; Build #160 passed for the change. Viewer render/header safeguards from Build #154 remain in place. Actual M12 performance remains unverified.
+- Serial 8: added numeric edge-case regression tests for OCR PDF dimensions and perspective quad validation. Builds #161–#164 all passed; latest verified HEAD before signing workflow enhancement was 2a198bbd586ddd73efbf146d6b3ecb1598ec2530. Nine core JVM test files are present. UI/instrumentation and device tests are not claimed.
+- Serial 9: CI now verifies Debug and Release APK signatures using Android `apksigner` and records SHA-256 certificate fingerprints. With no configured `SCANPRO_KEYSTORE_PATH`, Release falls back to the ephemeral runner's debug key and is not Play Store-ready or guaranteed update-compatible across separate CI runs. A persistent private release keystore must be configured securely before production distribution.
+- Serial 10 remains: final latest-HEAD build, final APK artifact and full source ZIP.

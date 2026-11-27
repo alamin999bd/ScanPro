@@ -88,3 +88,11 @@ Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD
 - Serial 6 CI verified; actual annotation appearance, bookmark behavior and search usability still need physical device/external viewer QA.
 - Serial 7 is in progress. Next: inspect remaining memory/rendering paths, then Serial 8 regression tests, Serial 9 release-signing verification, Serial 10 final APK + full Source ZIP.
 - No physical Samsung Galaxy M12 (Android 13) test has been performed in this session. Do not label the app device-tested or final yet.
+
+
+## 2026-11-27 — Serial 7/8 verified; Serial 9 signing gate
+- Latest pre-signing branch HEAD 2a198bbd586ddd73efbf146d6b3ecb1598ec2530; Build #164 run 45983573696 SUCCESS. All steps passed: OCR/font provisioning, Bengali/Latin glyph coverage, Unit Tests, Debug/Release APK builds, APK output verification and artifact upload.
+- Serial 7 includes dynamic viewer header measurement, capped PDF render width/cache safeguards and 250 ms document-content search debounce. Build #160 verified the debounce change.
+- Serial 8 automated regression expansion includes invalid/non-finite OCR PDF dimensions and invalid perspective geometry threshold tests. Nine core JVM test files exist; Builds #161–#164 passed.
+- Serial 9 workflow update adds apksigner validation for both APKs and records SHA-256 signing certificate fingerprints. If no SCANPRO_KEYSTORE_PATH is configured, Release is signed with Gradle's debug-key fallback; this is not a production Play Store signing identity and may not support updates across fresh CI runners.
+- Serial 10: after the signing-verification workflow passes on latest HEAD, create the final APK artifact and complete source ZIP. Physical Samsung Galaxy M12 testing remains for the user after delivery.

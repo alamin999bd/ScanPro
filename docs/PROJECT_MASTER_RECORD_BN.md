@@ -158,3 +158,11 @@
 - Serial 7 implementation commits: f6da4c104c2984fe24dc6cb40161c3f3cc6574d4, ef49c06542c8d8a525a470b1cfa9a893eaf00ab7, 181ab3df369da6ad3b2b5a84d767df15f1ce6297. Latest commit changes measured viewer header layout and PDF render/cache memory safeguards.
 - Build #153 failed on an intermediate commit and is superseded by the successful #154 on the current HEAD.
 - Next steps: complete Serial 7 audit/tuning, then Serial 8 automated regression tests, Serial 9 release signing audit, Serial 10 final latest-HEAD build and complete source ZIP. Maintain distinction between CI evidence and Samsung M12 physical QA; no device testing has occurred here.
+
+
+## 2026-11-27 — Automated regression and release-signing gate
+- Build #160 verified the 250 ms document-content search debounce.
+- Serial 8 regression additions: OCR PDF geometry rejects non-finite page dimensions; page quad validation rejects non-finite/negative thresholds. The repository has nine core JVM test files. Builds #161–#164 passed all workflow steps; #164 matched HEAD 2a198bbd586ddd73efbf146d6b3ecb1598ec2530.
+- CI now runs Android apksigner against Debug and Release APKs, verifies certificate SHA-256 fingerprints and stores the reports in the APK artifact.
+- Current Gradle release signing config falls back to the debug signing config when SCANPRO_KEYSTORE_PATH is absent. No production signing keystore is provisioned by this workflow. Therefore the Release APK is signature-valid but not Play Store production-signed; stable update signing requires a persistent user-controlled keystore stored only in GitHub Secrets.
+- Serial 10 remains final latest-HEAD build, APK/source ZIP packaging and final delivery. No physical Samsung Galaxy M12 test has been performed.

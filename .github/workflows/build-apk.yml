@@ -112,11 +112,41 @@ jobs:
           test -s app/build/outputs/apk/release/app-release.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/release/app-release.apk
 
+      - name: Verify APK signatures and signing identity
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
+          RELEASE_APK="app/build/outputs/apk/release/app-release.apk"
+          "$APKSIGNER" verify --verbose --print-certs "$DEBUG_APK" > debug-signing-report.txt 2>&1
+          "$APKSIGNER" verify --verbose --print-certs "$RELEASE_APK" > release-signing-report.txt 2>&1
+          DEBUG_CERT="$(grep -m1 'Signer #1 certificate SHA-256 digest:' debug-signing-report.txt | sed 's/.*: //')"
+          RELEASE_CERT="$(grep -m1 'Signer #1 certificate SHA-256 digest:' release-signing-report.txt | sed 's/.*: //')"
+          test -n "$DEBUG_CERT"
+          test -n "$RELEASE_CERT"
+          {
+            echo "## APK signing verification"
+            echo "- Debug APK signature: valid"
+            echo "- Release APK signature: valid"
+            echo "- Debug SHA-256: `$DEBUG_CERT`"
+            echo "- Release SHA-256: `$RELEASE_CERT`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ -z "${SCANPRO_KEYSTORE_PATH:-}" ]]; then
+            test "$DEBUG_CERT" = "$RELEASE_CERT"
+            echo "- Release signing identity: Gradle debug-key fallback (not a Play Store production signing key)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Release signing identity: configured SCANPRO keystore." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: Document-Scanner-APK
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/release/app-release.apk
+            debug-signing-report.txt
+            release-signing-report.txt
           if-no-files-found: error
           retention-days: 30

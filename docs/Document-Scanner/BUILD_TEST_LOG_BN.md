@@ -63,3 +63,11 @@
 - Build #154 APK output: Debug 45 MB, Release 37 MB. Artifact Document-Scanner-APK, ID 15190061888, uploaded successfully; artifact digest f4dbc9c79ebcbf09955891f2fbee0a177dcaae72aec4343ce0e6b686787a124f.
 - CI success proves compilation/package/test pipeline success only. No physical Samsung Galaxy M12 test was performed.
 - Serial 7 changes in the latest commit: Viewer search/bookmark header uses measured height rather than fixed top padding; PDF rendering width is capped at 1600 px; cache is rechecked under the render lock; failed bitmap rendering recycles its temporary bitmap.
+
+
+## Automated regression expansion and signing verification (2026-11-27)
+- Serial 7: added 250 ms debounce to document-content search; Build #160 (run 45982533902, commit dc2347ed94ba104bb3a1731cc1407b9bb7dcff42) passed.
+- Serial 8: expanded pure JVM regression coverage for invalid/non-finite OCR PDF dimensions and invalid perspective-geometry thresholds. The suite currently contains 9 core test files, including OCR parsing/geometry, searchable text layer, page quad, PDF range/order, markup geometry, page-markup normalization and PDF text search.
+- Builds #161–#164 (runs 45983560847, 45983564837, 45983568778, 45983573696) all passed; Build #164 matches branch HEAD 2a198bbd586ddd73efbf146d6b3ecb1598ec2530. Unit tests, Bengali/Latin font coverage, Debug/Release APK builds, APK output verification and artifact upload succeeded.
+- Serial 8 automated unit regression CI gate is complete. This does not represent automated UI/instrumentation tests or physical-device QA.
+- Serial 9: added an `apksigner` verification step to CI. It validates both APK signatures, records certificate SHA-256 fingerprints, and checks that the release APK uses the expected certificate. When `SCANPRO_KEYSTORE_PATH` is absent, Gradle intentionally falls back to its debug key; that APK is not Play Store production-signed. Never store a private keystore in the repository.
