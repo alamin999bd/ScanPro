@@ -25,6 +25,8 @@ class ParsePageRangesTest {
         assertNull(parsePageRanges("1,,2", 5))
         assertNull(parsePageRanges(",1", 5))
         assertNull(parsePageRanges("1,", 5))
+        assertNull(parsePageRanges("1,1", 5))
+        assertNull(parsePageRanges("1-2,2", 5))
     }
 
     @Test
@@ -37,5 +39,23 @@ class ParsePageRangesTest {
     @Test
     fun returnsNullWhenPageCountIsZero() {
         assertNull(parsePageRanges("1", 0))
+    }
+}
+
+class ParsePageOrderTest {
+    @Test
+    fun parsesCompletePageOrder() {
+        assertEquals(listOf(3, 1, 2), parsePageOrder("3, 1, 2", 3))
+    }
+
+    @Test
+    fun rejectsMissingDuplicateOrOutOfRangePages() {
+        assertNull(parsePageOrder("", 3))
+        assertNull(parsePageOrder("1,2", 3))
+        assertNull(parsePageOrder("1,1,3", 3))
+        assertNull(parsePageOrder("1,2,4", 3))
+        assertNull(parsePageOrder("1,,3", 3))
+        assertNull(parsePageOrder("1,2,3,", 3))
+        assertNull(parsePageOrder("1,2,3", 0))
     }
 }
