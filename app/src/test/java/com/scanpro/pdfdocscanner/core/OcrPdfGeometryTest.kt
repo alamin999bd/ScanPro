@@ -55,3 +55,24 @@ class OcrPdfGeometryTest {
         assertTrue(result.fontSize > 0f)
     }
 }
+
+    @Test
+    fun rejectsZeroAreaAndReversedWordBounds() {
+        val page = OcrPage(100, 100, emptyList())
+        assertNull(calculateOcrPdfPlacement(OcrWord("zero", 10, 10, 10, 30, 90), page, 200f, 200f))
+        assertNull(calculateOcrPdfPlacement(OcrWord("reversed", 30, 10, 10, 30, 90), page, 200f, 200f))
+        assertNull(calculateOcrPdfPlacement(OcrWord("reversed-y", 10, 40, 30, 20, 90), page, 200f, 200f))
+    }
+
+    @Test
+    fun clampsWordBeyondRightAndBottomEdges() {
+        val page = OcrPage(100, 100, emptyList())
+        val result = calculateOcrPdfPlacement(
+            OcrWord("edge", 80, 80, 120, 130, 85), page, 200f, 200f
+        )
+        requireNotNull(result)
+        assertEquals(160f, result.x, 0.01f)
+        assertEquals(2f, result.fontSize, 0.01f)
+        assertTrue(result.baselineY >= 0f)
+    }
+}
