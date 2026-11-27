@@ -110,6 +110,44 @@ class PdfEngineOperationsTest {
         assertEquals(listOf(PdfBookmark("Second page", 2)), engine.readBookmarks(bookmarked))
     }
 
+
+    @Test
+    fun optimizePreservesSelectableTextAndPageCount() = runBlocking {
+        val source = createPdf("SEARCHABLE-ALPHA", "SEARCHABLE-BETA")
+        val optimized = output("optimized.pdf")
+
+        assertEquals(2, engine.optimizePreservingText(source, optimized))
+        assertEquals(listOf("SEARCHABLE-ALPHA", "SEARCHABLE-BETA"), pageTexts(optimized))
+        assertTrue(optimized.exists() && optimized.length() > 0L)
+    }
+
+    @Test
+    fun pageNotesAndHighlightsRoundTripThroughPdfAnnotations() = runBlocking {
+        val source = createPdf("ANNOTATION-TARGET")
+        val withNote = output("with-note.pdf")
+        assertEquals(
+            1,
+            engine.addPageMarkup(
+                input = source, out = withNote, pageNumber = 1, kind = "NOTE",
+                note = "Review this paragraph", x = 60f, y = 100f, width = 120f, height = 32f,
+            ),
+        )
+
+        val withHighlight = output("with-highlight.pdf")
+        assertEquals(
+            1,
+            engine.addPageMarkup(
+                input = withNote, out = withHighlight, pageNumber = 1, kind = "HIGHLIGHT",
+                note = "", x = 60f, y = 100f, width = 120f, height = 32f,
+            ),
+        )
+
+        val markups = engine.readPageMarkups(withHighlight).single()
+        assertEquals(2, markups.size)
+        assertTrue(markups.any { it.kind == "NOTE" && it.note == "Review this paragraph" })
+        assertTrue(markups.any { it.kind == "HIGHLIGHT" })
+    }
+
     private fun createPdf(vararg labels: String): File {
         val file = output("fixture-${labels.size}-${labels.first()}.pdf")
         PDDocument().use { document ->
