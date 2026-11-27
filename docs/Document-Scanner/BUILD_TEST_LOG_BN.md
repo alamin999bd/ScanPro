@@ -92,3 +92,12 @@
 - Primary scan export currently prioritizes reliable PDF creation over the optional invisible text layer. Standard PDF-reader text search is not guaranteed for new scan PDFs; this trade-off must be tested and addressed separately.
 - Updated brand colors to teal/coral, light/dark schemes, editor Apply affordance, and app version 0.7.0 (versionCode 9).
 - Latest code commit `471ce385368d24036f222e0c2ca8006b058bfd74`; CI not yet confirmed for this commit. No physical Android 13 QA yet.
+
+
+## 2026-11-27 — Video-driven PDF save recovery: CI verification gate
+- Verified the branch contains the PDF-first save flow in `ScanViewModel.kt`: image PDF export, non-empty-file check and library registration happen before best-effort OCR starts.
+- Verified OCR cancellation is rethrown while ordinary OCR exceptions are isolated, so OCR failure should not roll back an already-saved PDF.
+- Related code commit: `471ce385368d24036f222e0c2ca8006b058bfd74`; documentation/theme status commit: `797f13418a6743890f0a6d293a603265f8371185`.
+- App config on the branch: versionName `0.7.0`, versionCode `9`, minSdk `26`, targetSdk `35`; Android 13 (API 33) is within the supported SDK range, subject to device QA.
+- This commit is a CI trigger and status-log update only. Do not treat CI success as proof that PDF creation, Enhance, filters, navigation or other controls work on a physical device.
+- Required next checks: latest-HEAD CI tests/build/signature/artifact validation, followed by hands-on Samsung Galaxy M12 Android 13 functional testing. OCR text-layer behavior for newly saved scans remains a known trade-off and must be validated separately.
