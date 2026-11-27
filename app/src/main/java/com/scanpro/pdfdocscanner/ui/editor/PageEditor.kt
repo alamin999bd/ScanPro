@@ -113,23 +113,39 @@ fun PageEditorScreen(
     BackHandler(enabled = !saving) { onCancel() }
 
     LaunchedEffect(file) {
-        val bmp = withContext(Dispatchers.IO) { processor.loadBitmap(file, 1400) }
-        if (bmp == null) {
+        try {
+            val bmp = withContext(Dispatchers.IO) { processor.loadBitmap(file, 1400) }
+            if (bmp == null) {
+                loadFailed = true
+                error = "This image could not be opened. Try another image."
+            } else {
+                source = bmp
+                val a = aspect
+                if (a != null) crop = fitRect(a, bmp.width, bmp.height)
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Throwable) {
             loadFailed = true
-        } else {
-            source = bmp
-            val a = aspect
-            if (a != null) crop = fitRect(a, bmp.width, bmp.height)
+            error = failure.message ?: "Could not load this image."
         }
     }
 
     LaunchedEffect(source, rotation, filter, brightness, contrast, quad) {
         val s = source ?: return@LaunchedEffect
-        val next = processor.preview(s, EditParams(rotation, NRect(), filter, brightness, contrast, quad))
-        val previous = shown
-        shown = next
-        if (previous != null && previous !== s && previous !== next && !previous.isRecycled) {
-            previous.recycle()
+        try {
+            val next = processor.preview(s, EditParams(rotation, NRect(), filter, brightness, contrast, quad))
+            val previous = shown
+            shown = next
+            error = null
+            if (previous != null && previous !== s && previous !== next && !previous.isRecycled) {
+                previous.recycle()
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Throwable) {
+            // A preview failure must not crash the whole editor; the source remains editable.
+            error = failure.message ?: "Preview failed. Try another filter or reduce the image size."
         }
     }
 
