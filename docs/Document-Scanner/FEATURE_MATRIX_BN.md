@@ -45,3 +45,11 @@
 | Release signature verification | Debug ও Release APK উভয়ের `apksigner verify` validation CI-তে পাস | Build #167 (run 45985668334) SUCCESS; Release uses debug-key fallback, not Play Store production signing |
 | Final source archive | Workflow now packages tracked project at checked-out HEAD with `git archive`, checks ZIP integrity and includes source ZIP in artifact | New final packaging Build pending; do not mark final until its artifact is inspected |
 | Samsung Galaxy M12 device QA | এই সেশনে বাস্তব ডিভাইসে পরীক্ষা হয়নি | Pending; CI success দিয়ে device QA বোঝায় না |
+
+
+## 2026-11-27 — Regression response to user video
+- Observed in supplied 121-second recording: after tapping Save, “Creating PDF…” remained visible from approximately 84 seconds through the end of the clip.
+- Main Scan save now writes a regular image-based PDF first and registers it before optional OCR; OCR runs afterward in the background and cannot block or invalidate PDF creation.
+- Important trade-off: this main save route no longer writes the invisible OCR text layer. OCR text is still attempted for in-app document search. Standard PDF-reader searchability of newly scanned PDFs is not currently guaranteed.
+- Theme palette changed to teal/coral, and editor Apply action is now explicitly labelled.
+- Latest code HEAD `471ce385368d24036f222e0c2ca8006b058bfd74`; build status not yet confirmed. Device QA pending.
