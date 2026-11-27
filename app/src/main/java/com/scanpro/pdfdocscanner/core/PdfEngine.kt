@@ -314,7 +314,6 @@ class PdfEngine(private val context: Context) {
                 annotation.rectangle = rect
                 annotation.contents = note.trim()
                 annotation.titlePopup = "Document Scanner"
-                annotation.isOpen = false
                 page.annotations.add(annotation)
             } else {
                 val annotation = com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup(
