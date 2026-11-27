@@ -109,7 +109,9 @@ class PdfEngineOperationsTest {
             labels.forEach { label ->
                 val page = PDPage()
                 document.addPage(page)
-                val font = context.assets.open("fonts/NotoSans-Regular.ttf").use { fontStream ->
+                val font = requireNotNull(javaClass.getResourceAsStream("/NotoSans-Regular.ttf")) {
+                    "NotoSans-Regular.ttf test fixture resource is missing"
+                }.use { fontStream ->
                     PDType0Font.load(document, fontStream)
                 }
                 PDPageContentStream(document, page).use { stream ->

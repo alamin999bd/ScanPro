@@ -54,6 +54,7 @@ jobs:
         run: |
           mkdir -p app/src/test/resources
           cp app/src/main/assets/fonts/NotoSansBengali.ttf app/src/test/resources/NotoSansBengali.ttf
+          cp app/src/main/assets/fonts/NotoSans-Regular.ttf app/src/test/resources/NotoSans-Regular.ttf
 
       - name: Verify Bengali and Latin font glyph coverage
         working-directory: ${{ env.PROJECT_DIR }}
