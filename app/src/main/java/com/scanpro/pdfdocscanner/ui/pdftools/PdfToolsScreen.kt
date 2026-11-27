@@ -354,13 +354,8 @@ private fun ToolPanel(
                 }
             }
             if (tool == Tool.COMPRESS) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Smaller", "Balanced", "Better quality").forEachIndexed { i, label ->
-                        FilterChip(selected = level == i, onClick = { level = i }, label = { Text(label) })
-                    }
-                }
                 Text(
-                    "Pages are re-drawn as pictures, so text in the copy can no longer be selected or searched.",
+                    "Creates a rewritten PDF only when it becomes smaller. It checks page count and extracted text before saving, so searchable text is not intentionally flattened into page images. Image-heavy PDFs may not get smaller.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
