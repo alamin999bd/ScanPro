@@ -81,4 +81,5 @@ dependencies {
     implementation(libs.pdfbox.android)
     implementation(libs.tesseract4android)
     implementation(libs.coil.compose)
+    testImplementation("junit:junit:4.13.2")
 }
