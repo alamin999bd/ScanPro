@@ -78,7 +78,7 @@ private enum class Tool(val title: String, val description: String, val icon: Im
     MERGE("Merge PDFs", "Combine two or more PDFs into one file.", Icons.Rounded.MergeType, TileScan),
     EXTRACT("Split / Extract pages", "Pull chosen pages out into a new PDF.", Icons.Rounded.ContentCut, TilePdfTools),
     TO_IMAGES("PDF to Images", "Save every page of a PDF as a JPEG image.", Icons.Rounded.Image, TileImageToPdf),
-    COMPRESS("Compress PDF", "Make a smaller copy that is easier to share.", Icons.Rounded.Compress, TileImport),
+    COMPRESS("Optimize PDF", "Safely rewrite a PDF while preserving searchable text; file size may not decrease.", Icons.Rounded.Compress, TileImport),
     LOCK("Lock with password", "Save a copy that needs a password to open.", Icons.Rounded.Lock, TileIdScan),
     UNLOCK("Remove password", "Save an unprotected copy (you must know the password).", Icons.Rounded.LockOpen, TileFolders),
     WATERMARK("Add watermark", "Stamp a text across every page.", Icons.Rounded.BrandingWatermark, TileDocuments),
@@ -248,7 +248,7 @@ private fun ToolPanel(
         Tool.MERGE -> "Tap PDFs in the order you want them joined."
         Tool.EXTRACT -> "Choose one PDF, then enter the pages to keep."
         Tool.TO_IMAGES -> "Choose the PDF to export as images."
-        Tool.COMPRESS -> "Choose one PDF. The original is kept; a smaller copy is added."
+        Tool.COMPRESS -> "Choose one PDF. A text-preserving optimized copy is saved only if it is smaller; otherwise no copy is added."
         Tool.LOCK -> "Choose one PDF. A password-protected copy is added; the original is kept."
         Tool.UNLOCK -> "Choose a password-protected PDF and enter its password."
         Tool.WATERMARK -> "Choose one PDF. A watermarked copy is added; the original is kept."
@@ -355,7 +355,7 @@ private fun ToolPanel(
             }
             if (tool == Tool.COMPRESS) {
                 Text(
-                    "Creates a rewritten PDF only when it becomes smaller. It checks page count and extracted text before saving, so searchable text is not intentionally flattened into page images. Image-heavy PDFs may not get smaller.",
+                    "This is a safe text-preserving rewrite, not image recompression. It verifies page count and extracted text, and saves a copy only when the result is smaller. Image-heavy PDFs may not get smaller.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
