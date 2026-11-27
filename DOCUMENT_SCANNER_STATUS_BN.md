@@ -77,3 +77,14 @@ Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD
 - User screenshot showed runs #28–#31 red. Inspected GitHub job logs: all four failed at Kotlin parsing in `PdfToolsScreen.kt`, line 424 (run #31; earlier line 423). Root cause was literal `\n` characters accidentally inserted between `when(tool)` branches after `Tool.SIGN`, not Gradle/KSP or PDFBox.
 - Corrected the malformed line breaks and committed fix `a46f486fafdcc39491adc6a327ade9c06ec50754` (`fix(pdf): correct malformed PDF tools action labels`).
 - A fresh build for this exact HEAD still needs confirmation. Do not mark the fix as verified until GitHub Actions passes.
+
+
+## 2026-11-27 verified continuation — Build #154
+- Latest branch HEAD: 181ab3df369da6ad3b2b5a84d767df15f1ce6297; latest matching workflow Build #154, run 45981830547, SUCCESS.
+- Unit Tests, Debug APK, Release APK, APK output verification and artifact upload passed. Artifact Document-Scanner-APK, ID 15190061888; Debug 45 MB, Release 37 MB.
+- Serial 6 code/CI milestones: PDF outline bookmarks with in-viewer page navigation; selectable PDF text search with page navigation; PDF text-note and highlight annotation overlays; CropBox/rotation geometry normalization and tests. Highlight overlay currently paints the annotation bounding rectangle rather than each text quad; UI is coordinate-based, not text-selection based.
+- Serial 7 started: search/bookmark header height is measured dynamically; PDF render width capped at 1600 px; duplicate render requests recheck cache under lock; failed render bitmaps are recycled.
+- Serial 1–5 are treated as code/CI-complete only; actual scanner, camera, gallery, OCR accuracy, PDF operations and filters still need sample-file and physical-device QA.
+- Serial 6 CI verified; actual annotation appearance, bookmark behavior and search usability still need physical device/external viewer QA.
+- Serial 7 is in progress. Next: inspect remaining memory/rendering paths, then Serial 8 regression tests, Serial 9 release-signing verification, Serial 10 final APK + full Source ZIP.
+- No physical Samsung Galaxy M12 (Android 13) test has been performed in this session. Do not label the app device-tested or final yet.
