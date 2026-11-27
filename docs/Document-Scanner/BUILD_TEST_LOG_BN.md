@@ -53,3 +53,13 @@
 - Changes include filter intermediate bitmap recycling, editor preview/source bitmap disposal, auto-detection preview cleanup, adaptive-threshold working pixel cap reduced from 8M to 4M, and export bitmap cleanup.
 - Latest verified HEAD at this entry: `8aca7bba29cba7d6311785e6a78d17f23da19ac5`; Build #111 run `45969721491` — Unit Tests, Debug/Release, APK output verification and artifact upload succeeded.
 - CI does not verify filter visual quality or actual device memory behaviour. Samsung Galaxy M12 visual/RAM QA remains pending.
+
+
+## PDF viewer annotation and UI/performance builds (2026-11-27)
+- Build #151 — run 45980965443, commit 82be4ca1272ccd901b85be41f66a8ec189d5d0a0: SUCCESS. Unit Tests, Debug/Release APK, output verification and artifact upload passed. Added in-viewer note/highlight overlay reading and drawing; geometry test expectations were corrected after earlier failed test runs.
+- Build #152 — run 45981747526, commit f6da4c104c2984fe24dc6cb40161c3f3cc6574d4: SUCCESS.
+- Build #153 — run 45981783269, commit ef49c06542c8d8a525a470b1cfa9a893eaf00ab7: FAILED. This run was for an intermediate commit and was superseded by Build #154; it is not the latest branch HEAD.
+- Build #154 — run 45981830547, commit 181ab3df369da6ad3b2b5a84d767df15f1ce6297: SUCCESS. Confirmed branch HEAD matched this SHA. Unit Tests passed; Debug and Release APK builds succeeded; APK output verification passed; artifact upload succeeded.
+- Build #154 APK output: Debug 45 MB, Release 37 MB. Artifact Document-Scanner-APK, ID 15190061888, uploaded successfully; artifact digest f4dbc9c79ebcbf09955891f2fbee0a177dcaae72aec4343ce0e6b686787a124f.
+- CI success proves compilation/package/test pipeline success only. No physical Samsung Galaxy M12 test was performed.
+- Serial 7 changes in the latest commit: Viewer search/bookmark header uses measured height rather than fixed top padding; PDF rendering width is capped at 1600 px; cache is rechecked under the render lock; failed bitmap rendering recycles its temporary bitmap.
