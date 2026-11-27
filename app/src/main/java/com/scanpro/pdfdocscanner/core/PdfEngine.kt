@@ -118,16 +118,29 @@ class PdfEngine(private val context: Context) {
                             stream.beginText()
                             stream.setRenderingMode(RenderingMode.NEITHER)
                             placements.forEachIndexed { index, placement ->
-                                val usesBengali = placement.text.any { it in '\u0980'..'\u09FF' }
-                                stream.setFont(if (usesBengali) bengaliFont else latinFont, placement.fontSize)
-                                stream.setTextMatrix(
-                                    com.tom_roush.pdfbox.util.Matrix.getTranslateInstance(
-                                        placement.x, placement.baselineY
+                                val runs = splitOcrTextByScript(placement.text)
+                                var cursorX = placement.x
+                                runs.forEach { run ->
+                                    val font = if (run.usesBengaliFont) bengaliFont else latinFont
+                                    stream.setFont(font, placement.fontSize)
+                                    stream.setTextMatrix(
+                                        com.tom_roush.pdfbox.util.Matrix.getTranslateInstance(
+                                            cursorX, placement.baselineY
+                                        )
                                     )
-                                )
+                                    stream.showText(run.text)
+                                    cursorX += font.getStringWidth(run.text) / 1000f * placement.fontSize
+                                }
                                 // Keep word boundaries in extracted/searchable PDF text.
-                                val text = placement.text + if (index < placements.lastIndex) " " else ""
-                                stream.showText(text)
+                                if (index < placements.lastIndex) {
+                                    stream.setFont(latinFont, placement.fontSize)
+                                    stream.setTextMatrix(
+                                        com.tom_roush.pdfbox.util.Matrix.getTranslateInstance(
+                                            cursorX, placement.baselineY
+                                        )
+                                    )
+                                    stream.showText(" ")
+                                }
                             }
                             stream.endText()
                         }
