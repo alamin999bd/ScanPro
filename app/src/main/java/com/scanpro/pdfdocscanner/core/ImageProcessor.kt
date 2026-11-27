@@ -345,13 +345,7 @@ class ImageProcessor(private val pdf: PdfEngine) {
                 q.add(((b[5 + i * 2] + 0.5f) / f.w).coerceIn(0f, 1f))
                 q.add(((b[6 + i * 2] + 0.5f) / f.h).coerceIn(0f, 1f))
             }
-            // Shoelace area (normalized) and minimum edge length must look like a real page.
-            var area = 0f
-            for (i in 0 until 4) {
-                val j = (i + 1) % 4
-                area += q[i * 2] * q[j * 2 + 1] - q[j * 2] * q[i * 2 + 1]
-            }
-            area = kotlin.math.abs(area) / 2f
+            // Reject tiny, concave, crossed, or incorrectly ordered corner sets.
             if (!PageQuadGeometry.isValid(q, minArea = 0.12f, minEdge = 0.1f)) return@withContext null
             q
         } catch (e: Throwable) {
@@ -369,7 +363,11 @@ class ImageProcessor(private val pdf: PdfEngine) {
         val h = max(1, (source.height * scale).toInt())
         val small = Bitmap.createScaledBitmap(source, w, h, true)
         val px = IntArray(w * h)
-        small.getPixels(px, 0, w, 0, 0, w, h)
+        try {
+            small.getPixels(px, 0, w, 0, 0, w, h)
+        } finally {
+            if (small !== source && !small.isRecycled) small.recycle()
+        }
         val gray = IntArray(w * h) { luma(px[it]) }
         val threshold = otsuThreshold(gray)
         val total = (w * h).toFloat()
