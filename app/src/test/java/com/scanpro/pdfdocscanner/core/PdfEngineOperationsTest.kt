@@ -97,8 +97,8 @@ class PdfEngineOperationsTest {
         assertEquals(2, engine.watermark(source, watermarked, "QA WATERMARK"))
         val watermarkedTexts = pageTexts(watermarked, sortByPosition = false)
         assertTrue(
-            "Expected both watermark words on every page; extracted text: $watermarkedTexts",
-            watermarkedTexts.all { it.contains("QA") && it.contains("WATERMARK") }
+            "Expected complete watermark text on every page; extracted text: $watermarkedTexts",
+            watermarkedTexts.all { it.filterNot(Char::isWhitespace).contains("QAWATERMARK") }
         )
 
         val numbered = output("numbered.pdf")
