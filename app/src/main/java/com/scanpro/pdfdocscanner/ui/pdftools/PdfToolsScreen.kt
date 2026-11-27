@@ -89,6 +89,8 @@ private enum class Tool(val title: String, val description: String, val icon: Im
     PAGE_NUMBERS("Add page numbers", "Add selectable page numbers to every page.", Icons.Rounded.PictureAsPdf, TilePdfTools),
     SEARCH_TEXT("Search PDF text", "Find selectable text inside a PDF.", Icons.Rounded.PictureAsPdf, TileDocuments),
     BOOKMARK("Add PDF bookmark", "Create a navigation bookmark for a selected page.", Icons.Rounded.PictureAsPdf, TilePdfTools),
+    TEXT_NOTE("Text annotation", "Attach a text note to a page area.", Icons.Rounded.Edit, TileDocuments),
+    HIGHLIGHT("Highlight area", "Highlight a rectangular area on a page.", Icons.Rounded.Edit, TilePdfTools),
 }
 
 @Composable
@@ -142,6 +144,7 @@ fun PdfToolsScreen(container: AppContainer, onBack: () -> Unit) {
                 onAddPageNumbers = vm::addPageNumbers,
                 onSearchPdfText = vm::searchPdfText,
                 onAddBookmark = vm::addBookmark,
+                onAddMarkup = vm::addMarkup,
             )
         }
     }
@@ -218,6 +221,7 @@ private fun ToolPanel(
     onAddPageNumbers: (DocumentEntity, String) -> Unit,
     onSearchPdfText: (DocumentEntity, String) -> Unit,
     onAddBookmark: (DocumentEntity, String, String, String) -> Unit,
+    onAddMarkup: (DocumentEntity, String, String, String, String, String, String, String, String, String) -> Unit,
 ) {
     // Selection order matters for merging, so keep an ordered list.
     val selected = remember(tool) { mutableStateListOf<DocumentEntity>() }
@@ -228,6 +232,12 @@ private fun ToolPanel(
     var searchQuery by remember(tool) { mutableStateOf("") }
     var bookmarkTitle by remember(tool) { mutableStateOf("") }
     var bookmarkPage by remember(tool) { mutableStateOf("1") }
+    var markupPage by remember(tool) { mutableStateOf("1") }
+    var markupText by remember(tool) { mutableStateOf("") }
+    var markupX by remember(tool) { mutableStateOf("40") }
+    var markupY by remember(tool) { mutableStateOf("40") }
+    var markupWidth by remember(tool) { mutableStateOf("200") }
+    var markupHeight by remember(tool) { mutableStateOf("50") }
     var level by remember(tool) { mutableIntStateOf(if (tool == Tool.ROTATE_PAGES) 90 else 1) }
     var strokes by remember(tool) { mutableStateOf<List<List<Offset>>>(emptyList()) }
     var signPage by remember(tool) { mutableStateOf("") }
@@ -249,6 +259,8 @@ private fun ToolPanel(
         Tool.PAGE_NUMBERS -> "Add page numbers to a new PDF copy."
         Tool.SEARCH_TEXT -> "Search text contained in a PDF. Image-only scanned pages need OCR text embedded first."
         Tool.BOOKMARK -> "Add a named navigation bookmark to a page in a new PDF copy."
+        Tool.TEXT_NOTE -> "Add a sticky-note style PDF annotation. Coordinates are PDF points from the bottom-left corner; the PDF viewer must support annotations."
+        Tool.HIGHLIGHT -> "Add a rectangular yellow highlight. Enter its position and size in PDF points from the bottom-left corner; this is an area highlight, not automatic text selection."
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -313,6 +325,19 @@ private fun ToolPanel(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+            if (tool == Tool.TEXT_NOTE || tool == Tool.HIGHLIGHT) {
+                OutlinedTextField(value = markupPage, onValueChange = { markupPage = it.filter(Char::isDigit).take(5) }, label = { Text("Page number") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                if (tool == Tool.TEXT_NOTE) OutlinedTextField(value = markupText, onValueChange = { markupText = it }, label = { Text("Note text") }, modifier = Modifier.fillMaxWidth())
+                Text("Area position and size (PDF points)", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = markupX, onValueChange = { markupX = it }, label = { Text("X") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+                    OutlinedTextField(value = markupY, onValueChange = { markupY = it }, label = { Text("Y") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = markupWidth, onValueChange = { markupWidth = it }, label = { Text("Width") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+                    OutlinedTextField(value = markupHeight, onValueChange = { markupHeight = it }, label = { Text("Height") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+                }
             }
             if (tool == Tool.BOOKMARK) {
                 OutlinedTextField(value = bookmarkTitle, onValueChange = { bookmarkTitle = it }, label = { Text("Bookmark title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -417,6 +442,7 @@ private fun ToolPanel(
                 Tool.PAGE_NUMBERS -> selected.size == 1 && selected.first().pageCount > 0
                 Tool.SEARCH_TEXT -> selected.size == 1 && searchQuery.isNotBlank()
                 Tool.BOOKMARK -> selected.size == 1 && selected.first().pageCount > 0 && bookmarkTitle.isNotBlank() && (bookmarkPage.toIntOrNull() in 1..selected.first().pageCount)
+                Tool.TEXT_NOTE, Tool.HIGHLIGHT -> selected.size == 1 && selected.first().pageCount > 0 && (markupPage.toIntOrNull() in 1..selected.first().pageCount) && markupX.toFloatOrNull() != null && markupY.toFloatOrNull() != null && (markupWidth.toFloatOrNull() ?: 0f) > 0f && (markupHeight.toFloatOrNull() ?: 0f) > 0f && (tool != Tool.TEXT_NOTE || markupText.isNotBlank())
             }
             Button(
                 onClick = {
@@ -438,6 +464,8 @@ private fun ToolPanel(
                         Tool.PAGE_NUMBERS -> onAddPageNumbers(selected.first(), name)
                         Tool.SEARCH_TEXT -> onSearchPdfText(selected.first(), searchQuery.trim())
                         Tool.BOOKMARK -> onAddBookmark(selected.first(), bookmarkTitle.trim(), bookmarkPage, name)
+                        Tool.TEXT_NOTE -> onAddMarkup(selected.first(), markupPage, "NOTE", markupText, markupX, markupY, markupWidth, markupHeight, name)
+                        Tool.HIGHLIGHT -> onAddMarkup(selected.first(), markupPage, "HIGHLIGHT", "", markupX, markupY, markupWidth, markupHeight, name)
                     }
                 },
                 enabled = ready,
@@ -459,6 +487,8 @@ private fun ToolPanel(
                         Tool.PAGE_NUMBERS -> "Add page numbers"
                         Tool.SEARCH_TEXT -> "Search PDF"
                         Tool.BOOKMARK -> "Add bookmark"
+                        Tool.TEXT_NOTE -> "Add text note"
+                        Tool.HIGHLIGHT -> "Highlight area"
                     }
                 )
             }
