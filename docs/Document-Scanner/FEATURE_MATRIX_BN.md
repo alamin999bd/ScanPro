@@ -2,17 +2,24 @@
 
 | ফিচার | বর্তমান নথিভুক্ত অবস্থা | QA অবস্থা |
 |---|---|---|
-| CameraX scan / multi-page capture | Source audit-এ আছে | বাস্তব ফোনে যাচাই বাকি |
-| Gallery import | Source audit-এ আছে | বাস্তব ফোনে যাচাই বাকি |
+| CameraX scan / multi-page capture | Source audit-এ আছে | Samsung M12-এ বাস্তব যাচাই বাকি |
+| Gallery import | Source audit-এ আছে | বিভিন্ন image format ও বড় ফাইল QA বাকি |
 | Auto edge detection / manual crop / perspective correction | Source audit-এ আছে; custom 4-point homography | geometry ও device QA বাকি |
-| Image filters | Original, Enhance, B&W, Grayscale, Vivid; অতিরিক্ত AUTO/LIGHTEN/DARKEN/COLOR branch যোগ করা হয়েছে | visual QA বাকি |
-| Offline Bangla + English OCR | Tesseract ben+eng; app database-এ text সংরক্ষণ ও app search | OCR accuracy QA বাকি |
-| OCR hidden text layer in generated PDF | এখনো নেই | বাকি |
-| PDF merge / extract / split / compress / lock / unlock / watermark / signature | source audit-এ আছে | functional QA বাকি |
-| Delete / reorder / rotate PDF pages | engine, ViewModel ও UI action যোগ করা হয়েছে | functional QA বাকি |
-| Add page numbers | engine, ViewModel ও UI action যোগ করা হয়েছে | functional QA বাকি |
-| Search selectable PDF text | PDFTextStripper-ভিত্তিক search যোগ করা হয়েছে; image-only scan-এ কাজ করবে না | functional QA বাকি |
-| Add PDF bookmark | PDF outline bookmark engine, ViewModel ও UI action যোগ করা হয়েছে; CI যাচাই চলমান | build/functional QA pending |
-| Text annotation / highlight | PDFBox দিয়ে sticky-note annotation এবং rectangular yellow highlight; PDF Tools-এ page/area input যুক্ত | CI ও sample PDF viewer QA বাকি |
+| Image filters | Original, Enhance, B&W, Grayscale, Vivid; AUTO/LIGHTEN/DARKEN/COLOR branch | visual QA বাকি |
+| Offline Bangla + English OCR | Tesseract ben+eng; text DB-তে সংরক্ষণ ও app search | Bangla/English mixed-document accuracy QA বাকি |
+| OCR hidden text layer in generated PDF | এখনো নেই | অগ্রাধিকারভিত্তিক অসম্পূর্ণ |
+| PDF merge / extract / split / compress / lock / unlock / watermark / signature | Source audit-এ আছে | প্রতিটি operation-এর sample-PDF functional QA বাকি |
+| Delete / reorder / rotate PDF pages | Engine, ViewModel ও UI action যোগ | sample PDF regression QA বাকি |
+| Add page numbers | Engine, ViewModel ও UI action যোগ | rotated/CropBox PDF QA বাকি |
+| Search selectable PDF text | PDFTextStripper search যোগ; image-only scan-এ কাজ করে না | sample PDF QA বাকি |
+| Add PDF bookmark | PDF outline bookmark engine, ViewModel ও UI action যোগ | external viewer navigation QA বাকি |
+| Text annotation / highlight | PDFBox sticky-note এবং rectangular yellow highlight; CropBox coordinate mapping ও finite/range validation যোগ | বিভিন্ন viewer-এ annotation visibility QA বাকি |
 | Standard PDF viewer-এ scanned PDF search | OCR text layer না থাকায় এখনো সমর্থিত নয় | বাকি |
-| PDF split/extract pages | source audit-এ আছে | functional QA বাকি |
+| Automated tests | test coverage এখনো পর্যাপ্ত নয় | বাকি |
+| Performance / memory checks | Samsung Galaxy M12 বাস্তব QA হয়নি | বাকি |
+| Final release signing / Source ZIP | final delivery প্রস্তুত নয় | বাকি |
+
+## সর্বশেষ যাচাইকৃত পরিবর্তন
+- Build #55 সফল; commit `d0825def927e2b874dc92b4364c9284fcb28a98a`.
+- PDF Annotation/Highlight coordinate mapping CropBox origin-এ সংশোধিত; invalid/non-finite/out-of-page bounds validate হয়।
+- CI success ফিচারের বাস্তব viewer compatibility বা physical-device QA-র বিকল্প নয়।
