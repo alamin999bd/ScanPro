@@ -59,17 +59,65 @@ jobs:
       - name: Prepare PDFBox Android assets for Robolectric tests
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          PDFBOX_VERSION="2.0.27.0"
-          PDFBOX_AAR="$RUNNER_TEMP/pdfbox-android-$PDFBOX_VERSION.aar"
-          curl -fsSL --retry 3 -o "$PDFBOX_AAR" "https://repo.maven.apache.org/maven2/com/tom-roush/pdfbox-android/$PDFBOX_VERSION/pdfbox-android-$PDFBOX_VERSION.aar"
-          mkdir -p "$RUNNER_TEMP/pdfbox-aar" app/src/main/assets
-          unzip -q "$PDFBOX_AAR" 'assets/*' -d "$RUNNER_TEMP/pdfbox-aar"
-          test -s "$RUNNER_TEMP/pdfbox-aar/assets/com/tom_roush/fontbox/resources/cmap/Identity-H"
-          # PDFBoxResourceLoader reads through Android AssetManager, so these
-          # resources must be packaged as application assets, not test assets.
-          cp -R "$RUNNER_TEMP/pdfbox-aar/assets/." app/src/main/assets/
-          test -s app/src/main/assets/com/tom_roush/fontbox/resources/cmap/Identity-H
-          echo "PDFBox Android CMap assets staged in app/src/main/assets."
+          # Resolve the exact AAR through the app's declared Gradle dependency.
+          # This avoids a second, direct Maven Central download (which was rate-limited).
+          cat > "$RUNNER_TEMP/stage-pdfbox.init.gradle" <<'GRADLE'
+          allprojects { p ->
+              p.afterEvaluate {
+                  if (p.path == ':app') {
+                      p.tasks.register('stagePdfBoxAndroidAssets') {
+                          doLast {
+                              def version = '2.0.27.0'
+                              def configuration = p.configurations.getByName('debugRuntimeClasspath')
+                              def artifact = configuration.resolvedConfiguration.resolvedArtifacts.find {
+                                  it.moduleVersion.id.group == 'com.tom-roush' &&
+                                  it.name == 'pdfbox-android' &&
+                                  it.moduleVersion.id.version == version
+                              }
+                              if (artifact == null) {
+                                  throw new GradleException("Could not resolve com.tom-roush:pdfbox-android:${version} from debugRuntimeClasspath")
+                              }
+
+                              def aar = artifact.file
+                              if (!aar.isFile() || aar.length() == 0) {
+                                  throw new GradleException("Resolved PDFBox AAR is missing or empty: ${aar}")
+                              }
+
+                              def assetsDir = p.file('src/main/assets')
+                              def zip = new java.util.zip.ZipFile(aar)
+                              int copied = 0
+                              try {
+                                  def entries = zip.entries()
+                                  while (entries.hasMoreElements()) {
+                                      def entry = entries.nextElement()
+                                      if (!entry.isDirectory() && entry.name.startsWith('assets/')) {
+                                          def relative = entry.name.substring('assets/'.length())
+                                          def output = new File(assetsDir, relative)
+                                          output.parentFile.mkdirs()
+                                          zip.getInputStream(entry).withCloseable { input ->
+                                              output.withOutputStream { stream -> stream << input }
+                                          }
+                                          copied++
+                                      }
+                                  }
+                              } finally {
+                                  zip.close()
+                              }
+
+                              def identityH = new File(assetsDir, 'com/tom_roush/fontbox/resources/cmap/Identity-H')
+                              if (copied == 0 || !identityH.isFile() || identityH.length() == 0) {
+                                  throw new GradleException("PDFBox assets were not staged correctly; copied=${copied}, Identity-H=${identityH}")
+                              }
+                              println("Staged ${copied} PDFBox AAR assets from ${aar} into app/src/main/assets.")
+                          }
+                      }
+                  }
+              }
+          }
+          GRADLE
+
+          chmod +x gradlew
+          ./gradlew --no-daemon --console=plain --init-script "$RUNNER_TEMP/stage-pdfbox.init.gradle" :app:stagePdfBoxAndroidAssets
 
       - name: Verify Bengali and Latin font glyph coverage
         working-directory: ${{ env.PROJECT_DIR }}
