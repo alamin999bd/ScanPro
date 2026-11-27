@@ -2,20 +2,20 @@
 
 ## Known limitations
 1. Generated scanned PDF-এ OCR থেকে invisible Unicode text layer যোগ করা হয়; তবে বাংলা যুক্তাক্ষর/শেপিং, text extraction order, selectable text alignment এবং বিভিন্ন PDF viewer-এ অনুসন্ধান বাস্তবে যাচাই বাকি।
-2. Compress PDF বর্তমানে প্রতিটি পৃষ্ঠা rasterize করে নতুন PDF বানায়; ফলে searchable/selectable text layer হারায়। এই সীমাবদ্ধতা সমাধান না হওয়া পর্যন্ত Compress-কে searchable-PDF-preserving feature বলা যাবে না।
+2. Optimize PDF PDF structure rewrite করে; এটি image recompression নয়। Page count ও extracted text মিলিয়ে দেখে এবং কেবল output ছোট হলে সেটি গ্রহণ করে। তাই image-heavy PDF-এ ফাইল ছোট নাও হতে পারে।
 3. Search PDF Text বর্তমানে PDF-এর selectable/searchable text খোঁজে; OCR database-এর text বা image-only PDF-এ আলাদা OCR না চালালে ফল নাও আসতে পারে।
 4. PDF viewer Android PdfRenderer-এ page render করে; PDF content editing features আলাদা করে তৈরি করতে হয়।
 5. PDF password support PDFBox implementation ও permission/owner restrictions দ্বারা সীমাবদ্ধ হতে পারে।
 6. বাস্তব Samsung Galaxy M12 QA এখনো pending।
 
 ## Next development order
-1. Searchable PDF-এর PDFTextStripper extraction ও Bangla/English mixed text automated verification।
-2. Standard PDF viewer-এ search/select এবং Bengali rendering যাচাই; shaping ব্যর্থ হলে limitation স্পষ্টভাবে দেখানো বা বিকল্প সমাধান।
-3. Compress PDF-এর text-preservation architecture নির্ধারণ; নিরাপদ সমাধান না পাওয়া পর্যন্ত rasterization limitation UI/docs-এ স্পষ্ট রাখা।
+1. PDF Tools-এর sample-file functional QA: merge, extract, delete, reorder, rotate, optimize, lock/unlock, watermark, signature ও page annotations। বিস্তারিত reproducible checklist: PDF_SAMPLE_QA_BN.md।
+2. Searchable PDF-এর PDFTextStripper extraction ও Bangla/English mixed text automated/runtime verification।
+3. Standard PDF viewer-এ search/select এবং Bengali rendering যাচাই; shaping ব্যর্থ হলে limitation স্পষ্টভাবে দেখানো বা বিকল্প সমাধান।
 4. PDF bookmark, annotation ও highlight বিভিন্ন viewer-এ sample-file QA।
-5. Camera, crop/perspective, filters, multipage scan, OCR accuracy এবং PDF operations-এর regression tests।
+5. Camera, crop/perspective, filters, multipage scan এবং OCR accuracy regression tests।
 6. Low-memory/performance checks এবং বাস্তব Samsung Galaxy M12 test।
-7. সব feature QA শেষে final APK signing verification, complete Source ZIP, test report ও GitHub build record।
+7. সব feature QA শেষে persistent user-owned release signing, final APK, complete Source ZIP, test report ও GitHub build record।
 
 ## Do not overclaim
 কোনো feature শুধু menu item বা method থাকার কারণে "সম্পূর্ণ কার্যকর" বলা যাবে না। CI, automated test, sample PDF test এবং real-device test আলাদা করে report করতে হবে। CI সফল হলেও বাস্তব ডিভাইস বা বাহ্যিক PDF viewer-এ feature কাজ করছে—এমন দাবি করা যাবে না।
@@ -52,3 +52,10 @@
 - Build #198: PDF-to-images page records are registered in one batch to avoid partial Library entries if registration fails.
 - Build #199: PDF Tools memory-exhaustion handling and partial-output cleanup added; Unit Tests, Debug/Release builds, APK verification and source ZIP packaging passed.
 - Next: sample-PDF regression checks for merge/extract/delete/reorder/rotate/optimize/lock/unlock/watermark/sign/annotations, followed by Samsung Galaxy M12 Android 13 testing. No device QA is claimed.
+
+
+## 2026-11-27 — PDF Sample QA planning
+- Build #200 (run 46006919470, commit 1b227d6d75da992541a147f9a73a6995bae204e2) SUCCESS: Unit Tests, Debug/Release APK, APK verification, signing checks ও source ZIP packaging passed।
+- Source audit-এ PDF engine operations-এর জন্য dedicated end-to-end/sample-PDF test suite পাওয়া যায়নি। বর্তমান JVM tests মূলত parsing, geometry, OCR text-layer helper ও markup logic পরীক্ষা করে।
+- নতুন PDF_SAMPLE_QA_BN.md-এ test fixtures, operation-by-operation expected results, negative cases ও evidence log format নির্ধারণ করা হয়েছে।
+- এই নথি test plan; কোনো sample PDF operation এখনো functional pass হিসেবে গণ্য নয়। Test execution ও Samsung Galaxy M12 QA pending।

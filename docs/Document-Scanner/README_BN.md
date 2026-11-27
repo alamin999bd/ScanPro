@@ -9,12 +9,13 @@
 - Application ID: com.scanpro.pdfdocscanner
 - Minimum Android: 8.0 (API 26)
 - Compile SDK: 35
-- সর্বশেষ পরিচিত version: 0.6.0 (versionCode 8; build পরিবর্তনে যাচাই করতে হবে)
+- সর্বশেষ যাচাইকৃত version: 0.7.0 (versionCode 9; minSdk 26, targetSdk 35)। Build #200-এ Debug/Release APK তৈরি ও যাচাই সফল।
 
 ## নথি
 - [Feature Matrix](FEATURE_MATRIX_BN.md)
 - [Build ও Test Log](BUILD_TEST_LOG_BN.md)
 - [Known Issues ও Roadmap](ROADMAP_BN.md)
+- [PDF Sample QA Protocol](PDF_SAMPLE_QA_BN.md)
 
 ## বাধ্যতামূলক Build Failure নিয়ম
 1. কোনো Build ব্যর্থ হলে পরবর্তী feature/ধাপে যাওয়া যাবে না।
