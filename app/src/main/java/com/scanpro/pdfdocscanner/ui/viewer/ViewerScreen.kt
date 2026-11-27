@@ -1,5 +1,6 @@
 package com.scanpro.pdfdocscanner.ui.viewer
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,11 +20,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.ZoomIn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -44,6 +48,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -160,6 +166,7 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
     var searchResults by remember { mutableStateOf<List<Pair<Int, String>>>(emptyList()) }
     var searchMessage by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
+    var selectedNote by remember { mutableStateOf<String?>(null) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val pageWidth = maxWidth * zoom
@@ -197,6 +204,45 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
                                 contentScale = ContentScale.FillBounds,
                                 modifier = Modifier.fillMaxSize(),
                             )
+                            val pageMarkups = state.pageMarkups.getOrNull(index).orEmpty()
+                            if (pageMarkups.isNotEmpty()) {
+                                Canvas(
+                                    modifier = Modifier.fillMaxSize().pointerInput(pageMarkups) {
+                                        detectTapGestures { tap ->
+                                            selectedNote = pageMarkups.firstOrNull { markup ->
+                                                markup.kind == "NOTE" &&
+                                                    tap.x >= markup.left * size.width &&
+                                                    tap.x <= (markup.left + markup.width) * size.width &&
+                                                    tap.y >= markup.top * size.height &&
+                                                    tap.y <= (markup.top + markup.height) * size.height
+                                            }?.note?.takeIf { it.isNotBlank() }
+                                        }
+                                    },
+                                ) {
+                                    pageMarkups.forEach { markup ->
+                                        val topLeft = Offset(markup.left * size.width, markup.top * size.height)
+                                        val markSize = Size(markup.width * size.width, markup.height * size.height)
+                                        if (markup.kind == "HIGHLIGHT") {
+                                            drawRect(
+                                                color = Color(0xFFFFEB3B).copy(alpha = 0.38f),
+                                                topLeft = topLeft,
+                                                size = markSize,
+                                            )
+                                        } else if (markup.kind == "NOTE") {
+                                            drawCircle(
+                                                color = Color(0xFF2563EB),
+                                                radius = 10.dp.toPx(),
+                                                center = Offset(topLeft.x + markSize.width / 2f, topLeft.y + markSize.height / 2f),
+                                            )
+                                            drawCircle(
+                                                color = Color.White,
+                                                radius = 3.dp.toPx(),
+                                                center = Offset(topLeft.x + markSize.width / 2f, topLeft.y + markSize.height / 2f),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         } else {
                             CircularProgressIndicator()
                         }
@@ -258,6 +304,17 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
                     }
                 }
             }
+        }
+
+        if (selectedNote != null) {
+            AlertDialog(
+                onDismissRequest = { selectedNote = null },
+                title = { Text("PDF Note") },
+                text = { Text(selectedNote.orEmpty()) },
+                confirmButton = {
+                    TextButton(onClick = { selectedNote = null }) { Text("Close") }
+                },
+            )
         }
 
         val current by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
