@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.scanpro.pdfdocscanner.core.FileStore
 import com.scanpro.pdfdocscanner.core.PdfEngine
 import com.scanpro.pdfdocscanner.core.parsePageRanges
+import com.scanpro.pdfdocscanner.core.parsePageOrder
 import com.scanpro.pdfdocscanner.data.DocumentRepository
 import com.scanpro.pdfdocscanner.data.db.DocumentEntity
 import com.scanpro.pdfdocscanner.ui.components.formatFileSize
