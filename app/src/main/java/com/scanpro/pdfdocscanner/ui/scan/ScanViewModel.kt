@@ -169,9 +169,13 @@ class ScanViewModel(
                 // Keep the library's OCR-based document search, but never block PDF delivery on it.
                 if (!isIdMode) {
                     viewModelScope.launch {
-                        runCatching {
+                        try {
                             val recognized = ocr.extractText(out, "pdf") { _, _ -> }
                             if (recognized.isNotBlank()) repo.saveText(id, recognized)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (ignored: Exception) {
+                            // The PDF is already safely saved. OCR failure must not undo export.
                         }
                     }
                 }
