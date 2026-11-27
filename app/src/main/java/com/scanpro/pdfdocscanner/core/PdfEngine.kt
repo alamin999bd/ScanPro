@@ -356,6 +356,25 @@ class PdfEngine(private val context: Context) {
         } finally { doc.close() }
     }
 
+    /** Reads top-level PDF outline entries for in-app bookmark navigation. */
+    suspend fun readBookmarks(input: File): List<PdfBookmark> = withContext(Dispatchers.IO) {
+        PDDocument.load(input).use { doc ->
+            val outline = doc.documentCatalog.documentOutline ?: return@withContext emptyList()
+            val result = ArrayList<PdfBookmark>()
+            var item = outline.firstChild
+            while (item != null) {
+                val destination = item.destination as? com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination
+                val page = destination?.page
+                val pageIndex = if (page == null) -1 else doc.pages.indexOf(page)
+                if (pageIndex >= 0 && item.title.isNotBlank()) {
+                    result += PdfBookmark(item.title, pageIndex + 1)
+                }
+                item = item.nextSibling
+            }
+            result
+        }
+    }
+
     /** Adds a real PDF outline/bookmark pointing to the requested 1-based page. */
     suspend fun addBookmark(input: File, out: File, title: String, pageNumber: Int): Int = withContext(Dispatchers.IO) {
         require(title.isNotBlank()) { "Enter a bookmark title" }
@@ -815,3 +834,6 @@ fun parsePageOrder(text: String, pageCount: Int): List<Int>? {
     if (pages.any { it !in 1..pageCount } || pages.distinct().size != pageCount) return null
     return pages
 }
+
+/** A top-level PDF outline entry and its 1-based destination page. */
+data class PdfBookmark(val title: String, val pageNumber: Int)
