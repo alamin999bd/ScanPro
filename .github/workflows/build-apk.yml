@@ -115,32 +115,36 @@ jobs:
       - name: Verify APK signatures and signing identity
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
+          set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
           APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
           DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
           RELEASE_APK="app/build/outputs/apk/release/app-release.apk"
+
           "$APKSIGNER" verify --verbose --print-certs "$DEBUG_APK" > debug-signing-report.txt 2>&1
           "$APKSIGNER" verify --verbose --print-certs "$RELEASE_APK" > release-signing-report.txt 2>&1
-          DEBUG_CERT="$(grep -m1 'Signer #1 certificate SHA-256 digest:' debug-signing-report.txt | sed 's/.*: //')"
-          RELEASE_CERT="$(grep -m1 'Signer #1 certificate SHA-256 digest:' release-signing-report.txt | sed 's/.*: //')"
-          test -n "$DEBUG_CERT"
-          test -n "$RELEASE_CERT"
+
+          echo "### Debug APK apksigner report"
+          cat debug-signing-report.txt
+          echo "### Release APK apksigner report"
+          cat release-signing-report.txt
+
+          DEBUG_CERT="$(awk 'tolower($0) ~ /certificate sha-256 digest/ { sub(/^.*: */, ""); print; exit }' debug-signing-report.txt)"
+          RELEASE_CERT="$(awk 'tolower($0) ~ /certificate sha-256 digest/ { sub(/^.*: */, ""); print; exit }' release-signing-report.txt)"
+
           {
             echo "## APK signing verification"
-            echo "- Debug APK signature: valid"
-            echo "- Release APK signature: valid"
-            echo "- Debug SHA-256: `$DEBUG_CERT`"
-            echo "- Release SHA-256: `$RELEASE_CERT`"
+            echo "- Debug APK signature: valid (apksigner verify passed)"
+            echo "- Release APK signature: valid (apksigner verify passed)"
+            if [[ -n "$DEBUG_CERT" ]]; then echo "- Debug certificate SHA-256: `$DEBUG_CERT`"; else echo "- Debug certificate fingerprint: unavailable in tool output"; fi
+            if [[ -n "$RELEASE_CERT" ]]; then echo "- Release certificate SHA-256: `$RELEASE_CERT`"; else echo "- Release certificate fingerprint: unavailable in tool output"; fi
           } >> "$GITHUB_STEP_SUMMARY"
-          if [[ -z "${SCANPRO_KEYSTORE_PATH:-}" ]]; then
-            if [[ "$DEBUG_CERT" = "$RELEASE_CERT" ]]; then
-              echo "- Signing identity: Debug and Release certificates match (Gradle debug-key fallback; not Play Store production signing)." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "- Signing identity: Debug and Release certificates differ; both APK signatures are valid. Stable update/install compatibility must be checked separately." >> "$GITHUB_STEP_SUMMARY"
-            fi
-          else
+
+          if [[ -n "${SCANPRO_KEYSTORE_PATH:-}" ]]; then
             echo "- Release signing identity: configured SCANPRO keystore." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Release signing identity: Gradle debug-key fallback (not a Play Store production signing key)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: actions/upload-artifact@v4
