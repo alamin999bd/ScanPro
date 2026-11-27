@@ -37,6 +37,7 @@ class ViewerViewModel(
 
     private var currentDoc: DocumentEntity? = null
     private var tempCopy: java.io.File? = null
+    private var openedFile: java.io.File? = null
 
     private val _state = MutableStateFlow<ViewerState>(ViewerState.Loading)
     val state: StateFlow<ViewerState> = _state
@@ -80,6 +81,7 @@ class ViewerViewModel(
 
     /** Opens [file] with PdfRenderer and returns the viewer state. Throws if it cannot be opened. */
     private suspend fun showFile(doc: DocumentEntity, file: java.io.File): ViewerState {
+        openedFile = file
         val sizes = withContext(Dispatchers.IO) {
             val fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
             val r = try {
@@ -125,6 +127,13 @@ class ViewerViewModel(
         }
     }
 
+    /** Returns 1-based page numbers containing the query in selectable PDF text. */
+    suspend fun searchPages(query: String): List<Pair<Int, String>> {
+        require(query.isNotBlank()) { "Enter text to search" }
+        val file = openedFile ?: throw IllegalStateException("PDF is not ready")
+        return pdf.searchText(file, query)
+    }
+
     suspend fun render(index: Int, widthPx: Int): Bitmap? {
         val key = "$index@$widthPx"
         cache.get(key)?.let { return it }
@@ -155,6 +164,7 @@ class ViewerViewModel(
         cache.evictAll()
         tempCopy?.delete()
         tempCopy = null
+        openedFile = null
     }
 
     companion object {
