@@ -351,7 +351,7 @@ class PdfEngine(private val context: Context) {
                 stripper.startPage = pageNumber
                 stripper.endPage = pageNumber
                 val content = stripper.getText(doc).trim()
-                if (content.contains(query, ignoreCase = true)) pageNumber to content else null
+                if (containsPdfSearchQuery(content, query)) pageNumber to content else null
             }
         } finally { doc.close() }
     }
