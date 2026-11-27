@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.scanpro.pdfdocscanner.core.FileStore
 import com.scanpro.pdfdocscanner.core.PdfEngine
 import com.scanpro.pdfdocscanner.core.PdfBookmark
+import com.scanpro.pdfdocscanner.core.PdfPageMarkup
 import com.scanpro.pdfdocscanner.data.DocumentRepository
 import com.scanpro.pdfdocscanner.data.db.DocumentEntity
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +25,7 @@ sealed interface ViewerState {
     data class Failed(val message: String) : ViewerState
     data class NeedsPassword(val doc: DocumentEntity, val wrongPassword: Boolean) : ViewerState
     /** [pageSizes] are the PDF's page width/height in points, used to reserve layout space. */
-    data class Pdf(val doc: DocumentEntity, val pageSizes: List<Pair<Int, Int>>, val bookmarks: List<PdfBookmark>) : ViewerState
+    data class Pdf(val doc: DocumentEntity, val pageSizes: List<Pair<Int, Int>>, val bookmarks: List<PdfBookmark>, val pageMarkups: List<List<PdfPageMarkup>>) : ViewerState
     data class Picture(val doc: DocumentEntity) : ViewerState
 }
 
@@ -98,7 +99,8 @@ class ViewerViewModel(
             (0 until r.pageCount).map { i -> r.openPage(i).use { it.width to it.height } }
         }
         val bookmarks = withContext(Dispatchers.IO) { pdf.readBookmarks(file) }
-        return if (sizes.isEmpty()) ViewerState.Failed("This PDF has no pages.") else ViewerState.Pdf(doc, sizes, bookmarks)
+        val pageMarkups = runCatching { pdf.readPageMarkups(file) }.getOrDefault(emptyList())
+        return if (sizes.isEmpty()) ViewerState.Failed("This PDF has no pages.") else ViewerState.Pdf(doc, sizes, bookmarks, pageMarkups)
     }
 
     /**
