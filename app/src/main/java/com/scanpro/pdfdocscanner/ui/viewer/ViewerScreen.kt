@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.ZoomIn
@@ -72,6 +73,7 @@ fun ViewerScreen(container: AppContainer, docId: Long, onBack: () -> Unit) {
     val context = LocalContext.current
     val export = rememberDocExporter(container)
     var zoomIndex by remember { mutableIntStateOf(0) }
+    var searchExpanded by remember { mutableStateOf(false) }
 
     val doc: DocumentEntity? = when (val s = state) {
         is ViewerState.Pdf -> s.doc
@@ -87,6 +89,7 @@ fun ViewerScreen(container: AppContainer, docId: Long, onBack: () -> Unit) {
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
+                        if (doc.type == "pdf") IconButton(onClick = { searchExpanded = !searchExpanded }) { Icon(Icons.Rounded.Search, contentDescription = "Search PDF") }
                         IconButton(onClick = { zoomIndex = (zoomIndex + 1) % ZOOM_LEVELS.size }) {
                             Icon(Icons.Rounded.ZoomIn, contentDescription = "Zoom ${(ZOOM_LEVELS[zoomIndex] * 100).toInt()}%")
                         }
@@ -111,7 +114,7 @@ fun ViewerScreen(container: AppContainer, docId: Long, onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 is ViewerState.NeedsPassword -> PasswordPrompt(s.wrongPassword, vm::submitPassword, Modifier.align(Alignment.Center))
-                is ViewerState.Pdf -> PdfPages(vm, s, ZOOM_LEVELS[zoomIndex])
+                is ViewerState.Pdf -> PdfPages(vm, s, ZOOM_LEVELS[zoomIndex], searchExpanded)
                 is ViewerState.Picture -> PictureView(container, s.doc, ZOOM_LEVELS[zoomIndex])
             }
         }
@@ -148,11 +151,15 @@ private fun PasswordPrompt(wrong: Boolean, onSubmit: (String) -> Unit, modifier:
 }
 
 @Composable
-private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float) {
+private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, searchExpanded: Boolean) {
     val listState = rememberLazyListState()
     val horizontal = rememberScrollState() // shared so all zoomed pages pan together
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
+    var query by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<Pair<Int, String>>>(emptyList()) }
+    var searchMessage by remember { mutableStateOf<String?>(null) }
+    var searching by remember { mutableStateOf(false) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val pageWidth = maxWidth * zoom
@@ -160,7 +167,7 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float) {
 
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(top = if (state.bookmarks.isNotEmpty()) 52.dp else 0.dp),
+            modifier = Modifier.fillMaxSize().padding(top = when { searchExpanded && state.bookmarks.isNotEmpty() -> 148.dp; searchExpanded -> 100.dp; state.bookmarks.isNotEmpty() -> 52.dp; else -> 0.dp }),
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -198,10 +205,44 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float) {
             }
         }
 
+        if (searchExpanded) {
+            Column(
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface).padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.weight(1f), singleLine = true, label = { Text("Find in this PDF") })
+                    Button(enabled = query.isNotBlank() && !searching, onClick = {
+                        scope.launch {
+                            searching = true
+                            searchMessage = null
+                            try {
+                                searchResults = vm.searchPages(query.trim())
+                                searchMessage = if (searchResults.isEmpty()) "No selectable text found" else "Found on ${searchResults.size} page(s)"
+                            } catch (error: Exception) {
+                                searchMessage = error.message ?: "Search failed"
+                                searchResults = emptyList()
+                            } finally { searching = false }
+                        }
+                    }) { Text(if (searching) "…" else "Find") }
+                }
+                searchMessage?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                if (searchResults.isNotEmpty()) {
+                    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        searchResults.forEach { (page, _) ->
+                            TextButton(onClick = { scope.launch { listState.animateScrollToItem((page - 1).coerceIn(0, state.pageSizes.lastIndex)) } }) { Text("Page $page") }
+                        }
+                    }
+                }
+            }
+        }
+
         if (state.bookmarks.isNotEmpty()) {
             Row(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
+                    .padding(top = if (searchExpanded) 100.dp else 0.dp)
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
                     .horizontalScroll(rememberScrollState())
