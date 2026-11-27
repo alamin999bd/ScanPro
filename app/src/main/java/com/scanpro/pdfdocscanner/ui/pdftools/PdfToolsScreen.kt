@@ -88,6 +88,7 @@ private enum class Tool(val title: String, val description: String, val icon: Im
     ROTATE_PAGES("Rotate pages", "Rotate all pages in a new PDF copy.", Icons.Rounded.RotateRight, TileFolders),
     PAGE_NUMBERS("Add page numbers", "Add selectable page numbers to every page.", Icons.Rounded.PictureAsPdf, TilePdfTools),
     SEARCH_TEXT("Search PDF text", "Find selectable text inside a PDF.", Icons.Rounded.PictureAsPdf, TileDocuments),
+    BOOKMARK("Add PDF bookmark", "Create a navigation bookmark for a selected page.", Icons.Rounded.PictureAsPdf, TilePdfTools),
 }
 
 @Composable
@@ -140,6 +141,7 @@ fun PdfToolsScreen(container: AppContainer, onBack: () -> Unit) {
                 onRotatePages = vm::rotatePages,
                 onAddPageNumbers = vm::addPageNumbers,
                 onSearchPdfText = vm::searchPdfText,
+                onAddBookmark = vm::addBookmark,
             )
         }
     }
@@ -215,6 +217,7 @@ private fun ToolPanel(
     onRotatePages: (DocumentEntity, Int, String) -> Unit,
     onAddPageNumbers: (DocumentEntity, String) -> Unit,
     onSearchPdfText: (DocumentEntity, String) -> Unit,
+    onAddBookmark: (DocumentEntity, String, String, String) -> Unit,
 ) {
     // Selection order matters for merging, so keep an ordered list.
     val selected = remember(tool) { mutableStateListOf<DocumentEntity>() }
@@ -223,6 +226,8 @@ private fun ToolPanel(
     var password by remember(tool) { mutableStateOf("") }
     var watermarkText by remember(tool) { mutableStateOf("") }
     var searchQuery by remember(tool) { mutableStateOf("") }
+    var bookmarkTitle by remember(tool) { mutableStateOf("") }
+    var bookmarkPage by remember(tool) { mutableStateOf("1") }
     var level by remember(tool) { mutableIntStateOf(if (tool == Tool.ROTATE_PAGES) 90 else 1) }
     var strokes by remember(tool) { mutableStateOf<List<List<Offset>>>(emptyList()) }
     var signPage by remember(tool) { mutableStateOf("") }
@@ -243,6 +248,7 @@ private fun ToolPanel(
         Tool.ROTATE_PAGES -> "Rotate all pages clockwise in a new copy."
         Tool.PAGE_NUMBERS -> "Add page numbers to a new PDF copy."
         Tool.SEARCH_TEXT -> "Search text contained in a PDF. Image-only scanned pages need OCR text embedded first."
+        Tool.BOOKMARK -> "Add a named navigation bookmark to a page in a new PDF copy."
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -307,6 +313,10 @@ private fun ToolPanel(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+            if (tool == Tool.BOOKMARK) {
+                OutlinedTextField(value = bookmarkTitle, onValueChange = { bookmarkTitle = it }, label = { Text("Bookmark title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = bookmarkPage, onValueChange = { bookmarkPage = it.filter(Char::isDigit).take(5) }, label = { Text("Page number (1-${selected.firstOrNull()?.pageCount ?: 0})") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
             }
             if (tool == Tool.SEARCH_TEXT) {
                 OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, label = { Text("Text to find") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -406,6 +416,7 @@ private fun ToolPanel(
                 Tool.ROTATE_PAGES -> selected.size == 1 && selected.first().pageCount > 0
                 Tool.PAGE_NUMBERS -> selected.size == 1 && selected.first().pageCount > 0
                 Tool.SEARCH_TEXT -> selected.size == 1 && searchQuery.isNotBlank()
+                Tool.BOOKMARK -> selected.size == 1 && selected.first().pageCount > 0 && bookmarkTitle.isNotBlank() && (bookmarkPage.toIntOrNull() in 1..selected.first().pageCount)
             }
             Button(
                 onClick = {
@@ -426,6 +437,7 @@ private fun ToolPanel(
                         Tool.ROTATE_PAGES -> onRotatePages(selected.first(), level, name)
                         Tool.PAGE_NUMBERS -> onAddPageNumbers(selected.first(), name)
                         Tool.SEARCH_TEXT -> onSearchPdfText(selected.first(), searchQuery.trim())
+                        Tool.BOOKMARK -> onAddBookmark(selected.first(), bookmarkTitle.trim(), bookmarkPage, name)
                     }
                 },
                 enabled = ready,
@@ -446,6 +458,7 @@ private fun ToolPanel(
                         Tool.ROTATE_PAGES -> "Rotate all pages"
                         Tool.PAGE_NUMBERS -> "Add page numbers"
                         Tool.SEARCH_TEXT -> "Search PDF"
+                        Tool.BOOKMARK -> "Add bookmark"
                     }
                 )
             }
