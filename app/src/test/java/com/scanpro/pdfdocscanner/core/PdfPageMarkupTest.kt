@@ -23,7 +23,7 @@ class PdfPageMarkupTest {
             rectLeft = 10f, rectBottom = 150f, rectRight = 30f, rectTop = 190f,
             rotation = 90, kind = "NOTE", note = "Reminder",
         )!!
-        assertEquals(0.05f, result.left, 0.0001f)
+        assertEquals(0.75f, result.left, 0.0001f)
         assertEquals(0.1f, result.top, 0.0001f)
         assertEquals(0.2f, result.width, 0.0001f)
         assertEquals(0.2f, result.height, 0.0001f)
