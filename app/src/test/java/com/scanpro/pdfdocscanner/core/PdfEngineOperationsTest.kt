@@ -140,7 +140,7 @@ class PdfEngineOperationsTest {
                 PDFTextStripper().apply {
                     startPage = page
                     endPage = page
-                    sortByPosition = sortByPosition
+                    this.sortByPosition = sortByPosition
                 }.getText(document).trim()
             }
         }
