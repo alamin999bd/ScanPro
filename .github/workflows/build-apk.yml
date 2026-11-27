@@ -46,6 +46,12 @@ jobs:
           test -s app/src/main/assets/fonts/NotoSansBengali.ttf
           test -s app/src/main/assets/fonts/NotoSansBengali-OFL.txt
           ls -lh app/src/main/assets/fonts
+      - name: Prepare font for PDF text-layer tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p app/src/test/resources
+          cp app/src/main/assets/fonts/NotoSansBengali.ttf app/src/test/resources/NotoSansBengali.ttf
+
       - name: Run unit tests
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
