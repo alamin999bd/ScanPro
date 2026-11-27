@@ -36,6 +36,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -122,7 +123,21 @@ fun PageEditorScreen(
 
     LaunchedEffect(source, rotation, filter, brightness, contrast, quad) {
         val s = source ?: return@LaunchedEffect
-        shown = processor.preview(s, EditParams(rotation, NRect(), filter, brightness, contrast, quad))
+        val next = processor.preview(s, EditParams(rotation, NRect(), filter, brightness, contrast, quad))
+        val previous = shown
+        shown = next
+        if (previous != null && previous !== s && previous !== next && !previous.isRecycled) {
+            previous.recycle()
+        }
+    }
+
+    DisposableEffect(file) {
+        onDispose {
+            val original = source
+            val preview = shown
+            if (preview != null && preview !== original && !preview.isRecycled) preview.recycle()
+            if (original != null && !original.isRecycled) original.recycle()
+        }
     }
 
     fun rotatedDims(): Pair<Int, Int> {
@@ -248,7 +263,11 @@ fun PageEditorScreen(
                                 error = null
                                 scope.launch {
                                     val rotated = processor.preview(src, EditParams(rotation = rotation, quad = quad))
-                                    val box = processor.detectDocument(rotated)
+                                    val box = try {
+                                        processor.detectDocument(rotated)
+                                    } finally {
+                                        if (rotated !== src && !rotated.isRecycled) rotated.recycle()
+                                    }
                                     detecting = false
                                     if (box != null) {
                                         aspect = null
