@@ -391,23 +391,25 @@ class PdfEngine(private val context: Context) {
         height: Float,
     ): Int = withContext(Dispatchers.IO) {
         require(kind == "NOTE" || kind == "HIGHLIGHT") { "Unsupported annotation type" }
-        require(x >= 0f && y >= 0f && width > 0f && height > 0f) { "Enter a valid annotation area" }
-        val doc = PDDocument.load(input)
-        try {
-            require(pageNumber in 1..doc.numberOfPages) { "Page must be between 1 and ${doc.numberOfPages}" }
-            require(x.isFinite() && y.isFinite() && width.isFinite() && height.isFinite()) {
-                "Annotation coordinates must be finite numbers"
-            }
-            val page = doc.getPage(pageNumber - 1)
-            // Coordinates entered in the UI are relative to the visible CropBox origin.
-            // PDF user-space coordinates may have a non-zero CropBox lower-left offset.
-            val box = page.cropBox
-            require(x + width <= box.width && y + height <= box.height) {
-                "Annotation area is outside the visible page area (${box.width.toInt()} × ${box.height.toInt()} pt)"
-            }
-            val left = box.lowerLeftX + x
-            val bottom = box.lowerLeftY + y
-            val rect = PDRectangle(left, bottom, width, height)
+                    val doc = PDDocument.load(input)
+            try {
+                require(pageNumber in 1..doc.numberOfPages) { "Page must be between 1 and ${doc.numberOfPages}" }
+                val page = doc.getPage(pageNumber - 1)
+                // UI coordinates are relative to the visible CropBox; convert once to PDF user space.
+                val box = page.cropBox
+                val geometry = createPdfMarkupGeometry(
+                    cropLeft = box.lowerLeftX,
+                    cropBottom = box.lowerLeftY,
+                    cropWidth = box.width,
+                    cropHeight = box.height,
+                    x = x,
+                    y = y,
+                    width = width,
+                    height = height,
+                )
+                val left = geometry.left
+                val bottom = geometry.bottom
+                val rect = PDRectangle(left, bottom, geometry.width, geometry.height)
             if (kind == "NOTE") {
                 require(note.isNotBlank()) { "Enter note text" }
                 val annotation = com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationText()
@@ -422,10 +424,7 @@ class PdfEngine(private val context: Context) {
                     com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup.SUB_TYPE_HIGHLIGHT
                 )
                 annotation.rectangle = rect
-                annotation.quadPoints = floatArrayOf(
-                    left, bottom + height, left + width, bottom + height,
-                    left, bottom, left + width, bottom
-                )
+                annotation.quadPoints = geometry.quadPoints
                 annotation.color = com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor(
                     floatArrayOf(1f, 1f, 0f),
                     com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceRGB.INSTANCE
