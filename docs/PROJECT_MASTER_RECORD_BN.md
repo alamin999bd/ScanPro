@@ -149,3 +149,12 @@
 - Exposed these as PDF Tools actions via `PdfToolsViewModel.kt` and `PdfToolsScreen.kt`. Operations save a new PDF copy and preserve the original.
 - Input validation: deletion must leave at least one page; reordering must include each page exactly once; rotation limited to 90/180/270 degrees.
 - CI runs triggered by these commits were still in progress when recorded. Do not mark as verified until latest HEAD build completes successfully.
+
+
+## 2026-11-27 resume record — Build #154
+- Branch: document-scanner-premium; verified HEAD 181ab3df369da6ad3b2b5a84d767df15f1ce6297.
+- Latest matching CI Build #154 (run 45981830547) SUCCESS: Unit Tests, Debug/Release APK builds, APK output verification and artifact upload. Artifact ID 15190061888; Debug APK 45 MB, Release APK 37 MB.
+- Serial 6 code/CI milestone: in-viewer bookmarks, selectable-text PDF search, supported note/highlight overlays, CropBox and page-rotation coordinate mapping tests. Highlight overlay is currently rectangular bounding-box rendering; markup creation is coordinate-based.
+- Serial 7 implementation commits: f6da4c104c2984fe24dc6cb40161c3f3cc6574d4, ef49c06542c8d8a525a470b1cfa9a893eaf00ab7, 181ab3df369da6ad3b2b5a84d767df15f1ce6297. Latest commit changes measured viewer header layout and PDF render/cache memory safeguards.
+- Build #153 failed on an intermediate commit and is superseded by the successful #154 on the current HEAD.
+- Next steps: complete Serial 7 audit/tuning, then Serial 8 automated regression tests, Serial 9 release signing audit, Serial 10 final latest-HEAD build and complete source ZIP. Maintain distinction between CI evidence and Samsung M12 physical QA; no device testing has occurred here.
