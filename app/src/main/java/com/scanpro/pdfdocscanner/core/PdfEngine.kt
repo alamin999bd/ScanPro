@@ -461,6 +461,54 @@ class PdfEngine(private val context: Context) {
         } finally { doc.close() }
     }
 
+    /** Reads our supported note/highlight annotations for the in-app viewer overlay. */
+    suspend fun readPageMarkups(input: File): List<List<PdfPageMarkup>> = withContext(Dispatchers.IO) {
+        PDDocument.load(input).use { doc ->
+            doc.pages.map { page ->
+                val crop = page.cropBox
+                page.annotations.mapNotNull { annotation ->
+                    val rect = annotation.rectangle ?: return@mapNotNull null
+                    when (annotation) {
+                        is com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup -> {
+                            if (annotation.subtype != com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup.SUB_TYPE_HIGHLIGHT) {
+                                null
+                            } else {
+                                normalizePdfMarkupBounds(
+                                    cropLeft = crop.lowerLeftX,
+                                    cropBottom = crop.lowerLeftY,
+                                    cropWidth = crop.width,
+                                    cropHeight = crop.height,
+                                    rectLeft = rect.lowerLeftX,
+                                    rectBottom = rect.lowerLeftY,
+                                    rectRight = rect.upperRightX,
+                                    rectTop = rect.upperRightY,
+                                    rotation = page.rotation,
+                                    kind = "HIGHLIGHT",
+                                )
+                            }
+                        }
+                        is com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationText -> {
+                            normalizePdfMarkupBounds(
+                                cropLeft = crop.lowerLeftX,
+                                cropBottom = crop.lowerLeftY,
+                                cropWidth = crop.width,
+                                cropHeight = crop.height,
+                                rectLeft = rect.lowerLeftX,
+                                rectBottom = rect.lowerLeftY,
+                                rectRight = rect.upperRightX,
+                                rectTop = rect.upperRightY,
+                                rotation = page.rotation,
+                                kind = "NOTE",
+                                note = annotation.contents.orEmpty(),
+                            )
+                        }
+                        else -> null
+                    }
+                }
+            }
+        }
+    }
+
     // ---------- PDF -> Images ----------
 
     /** Renders every page to a JPEG file created by [newFile]. Returns the created files. */
