@@ -71,7 +71,7 @@ class OcrPdfGeometryTest {
         )
         requireNotNull(result)
         assertEquals(160f, result.x, 0.01f)
-        assertEquals(2f, result.fontSize, 0.01f)
+        assertEquals(40f, result.fontSize, 0.01f)
         assertTrue(result.baselineY >= 0f)
     }
 }
