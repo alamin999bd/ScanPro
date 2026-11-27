@@ -391,8 +391,8 @@ class PdfEngine(private val context: Context) {
         height: Float,
     ): Int = withContext(Dispatchers.IO) {
         require(kind == "NOTE" || kind == "HIGHLIGHT") { "Unsupported annotation type" }
-                    val doc = PDDocument.load(input)
-            try {
+        val doc = PDDocument.load(input)
+        try {
                 require(pageNumber in 1..doc.numberOfPages) { "Page must be between 1 and ${doc.numberOfPages}" }
                 val page = doc.getPage(pageNumber - 1)
                 // UI coordinates are relative to the visible CropBox; convert once to PDF user space.
@@ -409,7 +409,7 @@ class PdfEngine(private val context: Context) {
                 )
                 val left = geometry.left
                 val bottom = geometry.bottom
-                val rect = PDRectangle(left, bottom, geometry.width, geometry.height)
+            val rect = PDRectangle(left, bottom, geometry.width, geometry.height)
             if (kind == "NOTE") {
                 require(note.isNotBlank()) { "Enter note text" }
                 val annotation = com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationText()
