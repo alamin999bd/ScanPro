@@ -169,6 +169,7 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
     var searchMessage by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
     var selectedNote by remember { mutableStateOf<String?>(null) }
+    var headerHeightPx by remember { mutableIntStateOf(0) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val pageWidth = maxWidth * zoom
@@ -176,7 +177,7 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
 
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(top = when { searchExpanded && state.bookmarks.isNotEmpty() -> 148.dp; searchExpanded -> 100.dp; state.bookmarks.isNotEmpty() -> 52.dp; else -> 0.dp }),
+            modifier = Modifier.fillMaxSize().padding(top = with(density) { headerHeightPx.toDp() }),
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -256,56 +257,60 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
             }
         }
 
-        if (searchExpanded) {
+        if (searchExpanded || state.bookmarks.isNotEmpty()) {
             Column(
-                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface).padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .onSizeChanged { headerHeightPx = it.height },
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.weight(1f), singleLine = true, label = { Text("Find in this PDF") })
-                    Button(enabled = query.isNotBlank() && !searching, onClick = {
-                        scope.launch {
-                            searching = true
-                            searchMessage = null
-                            try {
-                                searchResults = vm.searchPages(query.trim())
-                                searchMessage = if (searchResults.isEmpty()) "No selectable text found" else "Found on ${searchResults.size} page(s)"
-                            } catch (error: Exception) {
-                                searchMessage = error.message ?: "Search failed"
-                                searchResults = emptyList()
-                            } finally { searching = false }
+                if (searchExpanded) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.weight(1f), singleLine = true, label = { Text("Find in this PDF") })
+                            Button(enabled = query.isNotBlank() && !searching, onClick = {
+                                scope.launch {
+                                    searching = true
+                                    searchMessage = null
+                                    try {
+                                        searchResults = vm.searchPages(query.trim())
+                                        searchMessage = if (searchResults.isEmpty()) "No selectable text found" else "Found on ${searchResults.size} page(s)"
+                                    } catch (error: Exception) {
+                                        searchMessage = error.message ?: "Search failed"
+                                        searchResults = emptyList()
+                                    } finally { searching = false }
+                                }
+                            }) { Text(if (searching) "…" else "Find") }
                         }
-                    }) { Text(if (searching) "…" else "Find") }
-                }
-                searchMessage?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                if (searchResults.isNotEmpty()) {
-                    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        searchResults.forEach { (page, _) ->
-                            TextButton(onClick = { scope.launch { listState.animateScrollToItem((page - 1).coerceIn(0, state.pageSizes.lastIndex)) } }) { Text("Page $page") }
+                        searchMessage?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        if (searchResults.isNotEmpty()) {
+                            Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                searchResults.forEach { (page, _) ->
+                                    TextButton(onClick = { scope.launch { listState.animateScrollToItem((page - 1).coerceIn(0, state.pageSizes.lastIndex)) } }) { Text("Page $page") }
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-
-        if (state.bookmarks.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = if (searchExpanded) 100.dp else 0.dp)
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                state.bookmarks.forEach { bookmark ->
-                    TextButton(onClick = {
-                        scope.launch { listState.animateScrollToItem((bookmark.pageNumber - 1).coerceIn(0, state.pageSizes.lastIndex)) }
-                    }) {
-                        Text("${bookmark.title} · ${bookmark.pageNumber}")
+                if (state.bookmarks.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        state.bookmarks.forEach { bookmark ->
+                            TextButton(onClick = {
+                                scope.launch { listState.animateScrollToItem((bookmark.pageNumber - 1).coerceIn(0, state.pageSizes.lastIndex)) }
+                            }) {
+                                Text("${bookmark.title} · ${bookmark.pageNumber}", maxLines = 1)
+                            }
+                        }
                     }
                 }
             }
