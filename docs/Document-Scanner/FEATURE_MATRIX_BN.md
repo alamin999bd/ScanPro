@@ -8,7 +8,7 @@
 | Image filters | Original, Enhance, B&W, Grayscale, Vivid; AUTO/LIGHTEN/DARKEN/COLOR branch | visual QA বাকি |
 | Offline Bangla + English OCR | Tesseract ben+eng; text DB-তে সংরক্ষণ ও app search | Bangla/English mixed-document accuracy QA বাকি |
 | OCR hidden text layer in generated PDF | hOCR word geometry থেকে invisible Unicode text layer তৈরি; Noto Sans Bengali font asset CI-তে প্যাকেজ হয় | Unit/geometry test আছে; PDFTextStripper + external viewer + বাংলা/ইংরেজি বাস্তব QA বাকি |
-| PDF merge / extract / split / compress / lock / unlock / watermark / signature | Source audit-এ আছে | প্রতিটি operation-এর sample-PDF functional QA বাকি |
+| PDF merge / extract / split / text-preserving optimize / lock / unlock / watermark / signature | Source audit-এ আছে; Optimize PDF rewrite-এর আগে/পরে page count ও extracted text যাচাই করে এবং ছোট না হলে copy save করে না | প্রতিটি operation-এর sample-PDF functional QA বাকি |
 | Delete / reorder / rotate PDF pages | Engine, ViewModel ও UI action যোগ | sample PDF regression QA বাকি |
 | Add page numbers | Engine, ViewModel ও UI action যোগ | rotated/CropBox PDF QA বাকি |
 | Search selectable PDF text | PDFTextStripper search যোগ; image-only scan-এ কাজ করে না | sample PDF QA বাকি |
