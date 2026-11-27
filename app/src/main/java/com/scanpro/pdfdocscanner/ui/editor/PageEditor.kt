@@ -108,6 +108,8 @@ fun PageEditorScreen(
     var saving by remember { mutableStateOf(false) }
     var detecting by remember { mutableStateOf(false) }
     var quad by remember { mutableStateOf<List<Float>?>(null) }
+    // Corner editing uses the original photo; preview mode shows the corrected, rotated image.
+    var editingQuad by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     BackHandler(enabled = !saving) { onCancel() }
@@ -233,10 +235,10 @@ fun PageEditorScreen(
                     loadFailed -> Text("This image could not be opened.", color = Color.White)
                     img == null -> CircularProgressIndicator()
                     else -> CropArea(
-                        image = if (quad != null) source ?: img else img,
+                        image = if (quad != null && editingQuad) source ?: img else img,
                         crop = crop,
                         aspect = aspect,
-                        quad = quad,
+                        quad = if (editingQuad) quad else null,
                         onCrop = { crop = it },
                         onQuad = { quad = it },
                         modifier = Modifier.fillMaxSize(),
@@ -323,9 +325,7 @@ fun PageEditorScreen(
                             onClick = {
                                 val src = source ?: return@OutlinedButton
                                 if (quad != null) {
-                                    quad = null
-                                    aspect = null
-                                    crop = NRect()
+                                    editingQuad = !editingQuad
                                     return@OutlinedButton
                                 }
                                 detecting = true
@@ -335,6 +335,7 @@ fun PageEditorScreen(
                                         val found = processor.detectQuad(src)
                                         if (found != null) {
                                             quad = found
+                                            editingQuad = true
                                             aspect = null
                                             crop = NRect()
                                         } else {
@@ -352,7 +353,15 @@ fun PageEditorScreen(
                             },
                             enabled = source != null && !detecting,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text(if (quad != null) "Undo straighten" else "Straighten page (fix perspective)") }
+                        ) { Text(if (quad == null) "Straighten page (fix perspective)" else if (editingQuad) "Preview correction" else "Edit corners") }
+                        if (quad != null) {
+                            TextButton(onClick = {
+                                quad = null
+                                editingQuad = false
+                                crop = NRect()
+                                aspect = null
+                            }, modifier = Modifier.fillMaxWidth()) { Text("Undo straighten") }
+                        }
                         Spacer(Modifier.height(6.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             val presets = listOf<Pair<String, Float?>>(
