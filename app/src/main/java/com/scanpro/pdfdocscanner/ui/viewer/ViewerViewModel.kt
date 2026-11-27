@@ -141,15 +141,23 @@ class ViewerViewModel(
         cache.get(key)?.let { return it }
         return withContext(Dispatchers.IO) {
             renderLock.withLock {
+                // A second page request may have populated the cache while this request waited.
+                cache.get(key)?.let { return@withLock it }
                 val r = renderer ?: return@withLock null
                 try {
                     r.openPage(index).use { page ->
-                        val h = (page.height.toFloat() * widthPx / page.width).toInt().coerceAtLeast(1)
-                        val bmp = Bitmap.createBitmap(widthPx, h, Bitmap.Config.ARGB_8888)
-                        bmp.eraseColor(android.graphics.Color.WHITE)
-                        page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                        cache.put(key, bmp)
-                        bmp
+                        val safeWidth = widthPx.coerceIn(200, MAX_RENDER_WIDTH)
+                        val h = (page.height.toFloat() * safeWidth / page.width).toInt().coerceAtLeast(1)
+                        val bmp = Bitmap.createBitmap(safeWidth, h, Bitmap.Config.ARGB_8888)
+                        try {
+                            bmp.eraseColor(android.graphics.Color.WHITE)
+                            page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            cache.put(key, bmp)
+                            bmp
+                        } catch (error: Exception) {
+                            bmp.recycle()
+                            throw error
+                        }
                     }
                 } catch (ignored: Exception) {
                     null
@@ -171,5 +179,6 @@ class ViewerViewModel(
 
     companion object {
         private const val CACHE_BYTES = 48 * 1024 * 1024
+        private const val MAX_RENDER_WIDTH = 1600
     }
 }
