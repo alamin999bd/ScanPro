@@ -69,6 +69,7 @@ import com.scanpro.pdfdocscanner.ui.components.containerViewModel
 import com.scanpro.pdfdocscanner.ui.components.rememberDocExporter
 import com.scanpro.pdfdocscanner.ui.components.shareDocument
 import kotlin.math.min
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private val ZOOM_LEVELS = listOf(1f, 1.5f, 2f, 3f)
@@ -279,6 +280,8 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
                                     try {
                                         searchResults = vm.searchPages(query.trim())
                                         searchMessage = if (searchResults.isEmpty()) "No selectable text found" else "Found on ${searchResults.size} page(s)"
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
                                     } catch (error: Exception) {
                                         searchMessage = error.message ?: "Search failed"
                                         searchResults = emptyList()
