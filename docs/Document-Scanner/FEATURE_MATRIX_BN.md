@@ -5,7 +5,7 @@
 | CameraX scan / multi-page capture | Source audit-এ আছে | Samsung M12-এ বাস্তব যাচাই বাকি |
 | Gallery import | Source audit-এ আছে | বিভিন্ন image format ও বড় ফাইল QA বাকি |
 | Auto edge detection / manual crop / perspective correction | Source audit-এ আছে; custom 4-point homography | geometry ও device QA বাকি |
-| Image filters | Original, Enhance, B&W, Grayscale, Vivid; AUTO/LIGHTEN/DARKEN/COLOR branch | visual QA বাকি |
+| Image filters | Original, Enhance, B&W, Grayscale, Vivid; AUTO/LIGHTEN/DARKEN/COLOR branch; temporary bitmap lifecycle cleanup ও adaptive-threshold working pixel cap যুক্ত | CI Build #111 সফল; visual/device QA বাকি |
 | Offline Bangla + English OCR | Tesseract ben+eng; text DB-তে সংরক্ষণ ও app search | Bangla/English mixed-document accuracy QA বাকি |
 | OCR hidden text layer in generated PDF | hOCR word geometry থেকে invisible Unicode text layer তৈরি; Noto Sans Bengali font asset CI-তে প্যাকেজ হয় | Unit/geometry test আছে; PDFTextStripper + external viewer + বাংলা/ইংরেজি বাস্তব QA বাকি |
 | PDF merge / extract / split / text-preserving optimize / lock / unlock / watermark / signature | Source audit-এ আছে; Optimize PDF rewrite-এর আগে/পরে page count ও extracted text যাচাই করে এবং ছোট না হলে copy save করে না | প্রতিটি operation-এর sample-PDF functional QA বাকি |
