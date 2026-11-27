@@ -456,12 +456,22 @@ class PdfEngine(private val context: Context) {
                         val bmp = Bitmap.createBitmap(
                             targetWidthPx, (page.height * scale).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888
                         )
-                        bmp.eraseColor(android.graphics.Color.WHITE)
-                        page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         val file = newFile()
-                        file.outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, quality, it) }
-                        bmp.recycle()
-                        result.add(file)
+                        try {
+                            bmp.eraseColor(android.graphics.Color.WHITE)
+                            page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            file.outputStream().use { stream ->
+                                check(bmp.compress(Bitmap.CompressFormat.JPEG, quality, stream)) {
+                                    "Could not write rendered page ${i + 1}"
+                                }
+                            }
+                            result.add(file)
+                        } catch (error: Exception) {
+                            file.delete()
+                            throw error
+                        } finally {
+                            bmp.recycle()
+                        }
                     }
                     onProgress(i + 1, total)
                 }
@@ -527,6 +537,7 @@ class PdfEngine(private val context: Context) {
 
     /** Writes a password-protected (AES/RC4 128-bit) copy. The same password opens and owns it. */
     suspend fun protect(input: File, out: File, password: String): Int = withContext(Dispatchers.IO) {
+        require(password.length >= 4) { "Password must be at least 4 characters" }
         val doc = PDDocument.load(input)
         try {
             val permission = AccessPermission()
@@ -552,6 +563,7 @@ class PdfEngine(private val context: Context) {
 
     /** Writes an unprotected copy of a password-protected PDF. Throws if the password is wrong. */
     suspend fun unlock(input: File, out: File, password: String): Int = withContext(Dispatchers.IO) {
+        require(password.isNotBlank()) { "Enter the current password" }
         val doc = PDDocument.load(input, password)
         try {
             doc.setAllSecurityToBeRemoved(true)
@@ -568,7 +580,10 @@ class PdfEngine(private val context: Context) {
      * fonts and stamped as a picture, because the PDF built-in fonts cannot show those letters.
      */
     suspend fun watermark(input: File, out: File, text: String): Int = withContext(Dispatchers.IO) {
+        require(text.isNotBlank()) { "Enter watermark text" }
+        require(text.length <= 200) { "Watermark text must be 200 characters or fewer" }
         val doc = PDDocument.load(input)
+        var watermarkBitmap: Bitmap? = null
         try {
             val font = PDType1Font.HELVETICA_BOLD
             val latin = try {
@@ -580,7 +595,10 @@ class PdfEngine(private val context: Context) {
             val gs = PDExtendedGraphicsState()
             gs.setNonStrokingAlphaConstant(0.25f)
             val unitWidth = if (latin) font.getStringWidth(text) / 1000f else 0f
-            val picture = if (latin) null else LosslessFactory.createFromImage(doc, renderTextBitmap(text))
+            val picture = if (latin) null else {
+                watermarkBitmap = renderTextBitmap(text)
+                LosslessFactory.createFromImage(doc, watermarkBitmap)
+            }
             val aspect = if (picture == null) 1f else picture.height.toFloat() / picture.width
             for (page in doc.pages) {
                 val box = page.mediaBox
@@ -619,6 +637,7 @@ class PdfEngine(private val context: Context) {
             out.outputStream().use { doc.save(it) }
             doc.numberOfPages
         } finally {
+            watermarkBitmap?.takeUnless { it.isRecycled }?.recycle()
             doc.close()
         }
     }
@@ -653,6 +672,8 @@ class PdfEngine(private val context: Context) {
         pageNumber: Int,
         position: Int,
     ): Int = withContext(Dispatchers.IO) {
+        require(position in 0..2) { "Choose a valid signature position" }
+        require(signature.width > 0 && signature.height > 0 && !signature.isRecycled) { "The signature image is invalid" }
         val doc = PDDocument.load(input)
         try {
             if (pageNumber < 1 || pageNumber > doc.numberOfPages) {
@@ -664,17 +685,20 @@ class PdfEngine(private val context: Context) {
             }
             val box = page.mediaBox
             val image = LosslessFactory.createFromImage(doc, signature)
-            val targetW = box.width * 0.28f
-            val targetH = targetW * signature.height / signature.width
             val margin = 36f
+            val targetW = min(box.width * 0.28f, box.width - margin * 2f)
+            val maxHeight = (box.height - 72f).coerceAtLeast(1f)
+            val scale = min(targetW / signature.width, maxHeight / signature.height)
+            val drawW = signature.width * scale
+            val drawH = signature.height * scale
             val x = when (position) {
                 0 -> box.lowerLeftX + margin
-                1 -> box.lowerLeftX + (box.width - targetW) / 2f
-                else -> box.lowerLeftX + box.width - targetW - margin
+                1 -> box.lowerLeftX + (box.width - drawW) / 2f
+                else -> box.lowerLeftX + box.width - drawW - margin
             }
             val y = box.lowerLeftY + 48f
             PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
-                cs.drawImage(image, x, y, targetW, targetH)
+                cs.drawImage(image, x, y, drawW, drawH)
             }
             out.outputStream().use { doc.save(it) }
             doc.numberOfPages
@@ -761,8 +785,8 @@ class PdfEngine(private val context: Context) {
  * Returns null when the text is empty or malformed.
  */
 fun parsePageRanges(text: String, pageCount: Int): List<Int>? {
-    val parts = text.split(',').map { it.trim() }.filter { it.isNotEmpty() }
-    if (parts.isEmpty()) return null
+    val parts = text.split(',').map { it.trim() }
+    if (parts.isEmpty() || parts.any { it.isEmpty() }) return null
     val out = ArrayList<Int>()
     for (part in parts) {
         if (part.contains('-')) {
