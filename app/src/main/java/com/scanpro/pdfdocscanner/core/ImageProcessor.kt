@@ -7,6 +7,7 @@ import android.graphics.ColorMatrixColorFilter
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -88,10 +89,14 @@ class ImageProcessor(private val pdf: PdfEngine) {
                 val rotated = rotate(warped, params.rotation).also { if (it !== warped) owned.add(it) }
                 val cropped = crop(rotated, params.crop).also { if (it !== rotated) owned.add(it) }
                 val result = applyLook(cropped, params).also { if (it !== cropped) owned.add(it) }
-                output.outputStream().use { result.compress(Bitmap.CompressFormat.JPEG, quality, it) }
-                true
+                val compressed = output.outputStream().use { result.compress(Bitmap.CompressFormat.JPEG, quality, it) }
+                compressed && output.isFile && output.length() > 0L
+            } catch (cancelled: CancellationException) {
+                output.delete()
+                throw cancelled
             } catch (ignored: Throwable) {
                 // Includes OutOfMemoryError on very large images: caller reports a clear message.
+                output.delete()
                 false
             } finally {
                 owned.forEach { if (!it.isRecycled) it.recycle() }
