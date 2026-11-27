@@ -35,3 +35,10 @@
 - Build #69 (run 45948288495) — SUCCESS: consolidated branch state verified; Unit Tests, Debug APK, Release APK, output verification and artifact upload all passed.
 - Runtime-readiness fix: the exporter loads Noto Sans Bengali from app assets. CI now downloads the font and its OFL license to the exact asset path before packaging; compile success alone would not detect a missing runtime asset.
 - Geometry unit tests and PDF word spacing are added; PDF viewer search/select and Bengali rendering still require runtime validation.
+
+## PDF text-layer test failure and correction (2026-11-27)
+- Build #86 (run `45952041353`) ও #87 (run `45952052745`) — FAILED at `SearchablePdfTextLayerTest`; PDFBox threw a runtime exception while loading the variable Noto Sans Bengali font.
+- Root cause: the CI font download supplied a variable TTF, while the PDFBox Android font loader in the unit-test environment could not load that font.
+- Corrective change: CI now downloads the static `NotoSansBengali-Regular.ttf` from the Noto fonts repository and the matching SIL Open Font License text. The app asset filename remains `NotoSansBengali.ttf`, so the production asset path is unchanged.
+- Commit: `a3f998b641b2c5a2be2bfe13bcc7ca2b73d2c91d`.
+- Next gate: rerun all unit tests, then Debug and Release APK builds, output verification and artifact upload. Do not mark the font/text-layer test fixed until a new build passes.
