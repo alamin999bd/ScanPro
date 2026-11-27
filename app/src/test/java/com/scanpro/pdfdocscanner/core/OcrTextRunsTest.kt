@@ -22,6 +22,15 @@ class OcrTextRunsTest {
     }
 
     @Test
+    fun bengaliDandaUsesBengaliFontEvenAfterLatinText() {
+        val input = "বাংলা। English।"
+        val runs = splitOcrTextByScript(input)
+        assertEquals(input, runs.joinToString("") { it.text })
+        assertEquals(listOf(true, false, true), runs.map { it.usesBengaliFont })
+        assertEquals("।", runs.last().text)
+    }
+
+    @Test
     fun handlesEmptyAndSingleScriptText() {
         assertEquals(emptyList<OcrTextRun>(), splitOcrTextByScript(""))
         assertEquals(listOf(OcrTextRun("শুধু বাংলা", true)), splitOcrTextByScript("শুধু বাংলা"))
