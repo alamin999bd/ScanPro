@@ -40,9 +40,9 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           mkdir -p app/src/main/assets/fonts
-          FONT_BASE="https://raw.githubusercontent.com/google/fonts/73b3937823dfe9d7f4cdcc0b2399a1f06940430d/ofl/notosansbengali"
-          curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali.ttf "$FONT_BASE/NotoSansBengali%5Bwdth%2Cwght%5D.ttf"
-          curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali-OFL.txt "$FONT_BASE/OFL.txt"
+          FONT_BASE="https://raw.githubusercontent.com/notofonts/noto-fonts/main/hinted/ttf/NotoSansBengali"
+          curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali.ttf "$FONT_BASE/NotoSansBengali-Regular.ttf"
+          curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali-OFL.txt "https://raw.githubusercontent.com/notofonts/noto-fonts/main/LICENSE"
           test -s app/src/main/assets/fonts/NotoSansBengali.ttf
           test -s app/src/main/assets/fonts/NotoSansBengali-OFL.txt
           ls -lh app/src/main/assets/fonts
