@@ -16,7 +16,9 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
+import com.tom_roush.pdfbox.pdmodel.font.PDType0Font
 import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState
+import com.tom_roush.pdfbox.pdmodel.graphics.state.RenderingMode
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +59,75 @@ class PdfEngine(private val context: Context) {
                     addImagePage(doc, bmp, pageSize, quality)
                 } finally {
                     bmp.recycle()
+                }
+                onProgress(index + 1, images.size)
+            }
+            out.outputStream().use { doc.save(it) }
+        } finally {
+            doc.close()
+        }
+        images.size
+    }
+
+    /**
+     * Creates a scanned PDF with an invisible Unicode text layer positioned over each image.
+     * OCR bounds are measured against the same EXIF-corrected bitmap dimensions used here.
+     * The embedded Noto Sans Bengali font covers Bangla and Latin text.
+     */
+    suspend fun imagesToSearchablePdf(
+        images: List<Uri>,
+        ocrPages: List<OcrPage>,
+        out: File,
+        pageSize: Int,
+        quality: Int,
+        onProgress: (Int, Int) -> Unit = { _, _ -> },
+    ): Int = withContext(Dispatchers.IO) {
+        require(images.isNotEmpty()) { "No images" }
+        require(images.size == ocrPages.size) { "OCR page count does not match the scan" }
+        val doc = PDDocument()
+        try {
+            val font = context.assets.open("fonts/NotoSansBengali-Regular.ttf").use {
+                PDType0Font.load(doc, it)
+            }
+            images.forEachIndexed { index, uri ->
+                val bitmap = decodeBitmap(uri, MAX_IMAGE_DIM)
+                    ?: throw IllegalStateException("Cannot read image ${index + 1}")
+                try {
+                    val ocrPage = ocrPages[index]
+                    require(ocrPage.imageWidth == bitmap.width && ocrPage.imageHeight == bitmap.height) {
+                        "OCR image dimensions changed before PDF export on page ${index + 1}"
+                    }
+                    val rect = pdfRect(pageSize, bitmap)
+                    val page = PDPage(rect)
+                    doc.addPage(page)
+                    val image = JPEGFactory.createFromImage(doc, bitmap, quality / 100f)
+                    val scale = min(rect.width / bitmap.width, rect.height / bitmap.height)
+                    val imageWidth = bitmap.width * scale
+                    val imageHeight = bitmap.height * scale
+                    val imageLeft = (rect.width - imageWidth) / 2f
+                    val imageBottom = (rect.height - imageHeight) / 2f
+                    PDPageContentStream(doc, page).use { stream ->
+                        stream.drawImage(image, imageLeft, imageBottom, imageWidth, imageHeight)
+                        val placements = ocrPage.words.mapNotNull { word ->
+                            calculateOcrPdfPlacement(word, ocrPage, rect.width, rect.height)
+                        }
+                        if (placements.isNotEmpty()) {
+                            stream.beginText()
+                            stream.setRenderingMode(RenderingMode.NEITHER)
+                            placements.forEach { placement ->
+                                stream.setFont(font, placement.fontSize)
+                                stream.setTextMatrix(
+                                    com.tom_roush.pdfbox.util.Matrix.getTranslateInstance(
+                                        placement.x, placement.baselineY
+                                    )
+                                )
+                                runCatching { stream.showText(placement.text) }
+                            }
+                            stream.endText()
+                        }
+                    }
+                } finally {
+                    bitmap.recycle()
                 }
                 onProgress(index + 1, images.size)
             }
