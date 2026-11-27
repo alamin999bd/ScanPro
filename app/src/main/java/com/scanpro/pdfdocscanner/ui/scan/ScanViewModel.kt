@@ -39,9 +39,7 @@ class ScanViewModel(
 ) : ViewModel() {
 
     private val maxPages = if (isIdMode) 2 else Int.MAX_VALUE
-
     private var galleryImportInProgress = false
-
     private val _ui = MutableStateFlow(ScanUi())
     val ui: StateFlow<ScanUi> = _ui
 
@@ -50,7 +48,6 @@ class ScanViewModel(
     fun onCaptured(file: File) {
         _ui.update { state ->
             val pages = state.pages + file
-            // ID cards are cropped to the card shape straight away.
             state.copy(pages = pages, error = null, editing = if (isIdMode) pages.lastIndex else state.editing)
         }
     }
@@ -140,6 +137,11 @@ class ScanViewModel(
         _ui.value = ScanUi()
     }
 
+    /**
+     * Save the PDF first, without making successful export depend on OCR.
+     * OCR is a separate best-effort background task: slow or missing language data must never
+     * leave the user stuck on "Creating PDF…" or prevent the PDF from being saved.
+     */
     fun save(name: String) {
         val state = _ui.value
         if (state.pages.isEmpty() || state.saving) return
@@ -153,15 +155,30 @@ class ScanViewModel(
                 if (isIdMode) {
                     pdf.idCardToPdf(uris[0], uris.getOrNull(1), out, s.pageSize, s.imageQuality)
                 } else {
-                    // OCR is performed one page at a time to keep peak memory use suitable for
-                    // entry-level Android devices. Empty OCR results still preserve the scan.
-                    val ocrPages = state.pages.map { ocr.recognizeImagePage(it) }
-                    pdf.imagesToSearchablePdf(uris, ocrPages, out, s.pageSize, s.imageQuality)
+                    // Export the image-based PDF immediately. PdfEngine performs encoding on IO.
+                    // Tesseract is intentionally not in the critical path for PDF creation.
+                    pdf.imagesToPdf(uris, out, s.pageSize, s.imageQuality)
                 }
+
+                require(out.exists() && out.length() > 0L) { "PDF export produced an empty file." }
                 val pageCount = if (isIdMode) 1 else uris.size
                 val id = repo.addDocument(finalName, out, "pdf", pageCount)
                 state.pages.forEach { it.delete() }
                 _ui.value = ScanUi(savedName = FileStore.sanitizeName(finalName), savedId = id)
+
+                // Keep the library's OCR-based document search, but never block PDF delivery on it.
+                if (!isIdMode) {
+                    viewModelScope.launch {
+                        runCatching {
+                            val recognized = ocr.extractText(out, "pdf") { _, _ -> }
+                            if (recognized.isNotBlank()) repo.saveText(id, recognized)
+                        }
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                out.delete()
+                _ui.update { it.copy(saving = false, error = "PDF creation was cancelled.") }
+                throw cancelled
             } catch (e: Exception) {
                 out.delete()
                 _ui.update { it.copy(saving = false, error = e.message ?: "Could not save the scan") }
