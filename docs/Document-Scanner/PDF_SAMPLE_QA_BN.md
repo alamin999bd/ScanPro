@@ -61,6 +61,27 @@
 - PASS / FAIL / BLOCKED:
 - Screenshot বা error log reference:
 
+## Static code audit (execution নয়)
+
+এই অংশটি source-code inspection থেকে তৈরি; এখানে কোনো PDF sample চালানো হয়নি। তাই নিচের বিষয়গুলো QA-তে বিশেষভাবে যাচাই করতে হবে।
+
+| Area | Source-level observation | Sample QA-তে যাচাই |
+|---|---|---|
+| Merge / Extract / Delete / Reorder | PDFBox দিয়ে page import/remove করা হয়; page selection 1-based | page count ছাড়াও প্রতিটি page-এর text/visual identity মিলিয়ে দেখুন |
+| Rotate | প্রতিটি page-এর আগের rotation-এর সঙ্গে 90/180/270 যোগ হয় | আগে থেকেই rotated page-এ cumulative rotation ও visual orientation |
+| Optimize | PDF পুনরায় save করে page count ও extracted text exact match যাচাই; output ছোট না হলে UI copy রাখে না | text-preservation ও external viewer; image-heavy PDF ছোট হবে এমন প্রত্যাশা নয় |
+| Lock / Unlock | ৪+ অক্ষরের password; unlock-এ supplied password দিয়ে PDF load হয় | ভুল password, reopen prompt, সঠিক password-এ text/page count |
+| Watermark | Latin built-in font; অন্য script bitmap হিসেবে render হয় | বাংলা glyph, transparency, CropBox/MediaBox ও rotated page placement |
+| Signature | signature image বসায়; rotated page হলে operation reject করে | page 1/last page, position, source unchanged; এটি cryptographic signature নয় |
+| Page numbers | selectable Helvetica text; CropBox-এর ভিত্তিতে placement | rotated/CropBox page-এ clipping ও external viewer visibility |
+| Notes / Highlights | annotation rectangle PDF user-space-এ CropBox offset ধরে তৈরি | rotation, non-zero CropBox origin ও external viewer appearance |
+
+### QA execution boundary
+- CI Build #201 সফল হলেও উপরের PDF operations sample-file end-to-end হিসেবে চালানো হয়নি।
+- Repository-তে dedicated PDF sample fixture বা PdfEngine integration test পাওয়া যায়নি; বর্তমান JVM test-গুলো geometry, parsing ও text-search helper-এর মতো isolated logic কভার করে।
+- তাই এই পর্যায়ে কোনো operation PASS ঘোষণা করা হচ্ছে না। প্রথমে controlled P1/P2/P4/P6 fixtures তৈরি/সংগ্রহ করে PDF engine-এর positive ও negative paths চালাতে হবে।
+- Test fixture যোগ করার সময় copyrighted বা ব্যক্তিগত নথি ব্যবহার করা যাবে না; synthetic test content ব্যবহার করতে হবে।
+
 ## বর্তমান অবস্থা
 - Build #200 CI সফল; এটি PDF Tools-এর end-to-end functional test নয়।
 - Dedicated PDF engine sample-fixture test suite source audit-এ পাওয়া যায়নি।
