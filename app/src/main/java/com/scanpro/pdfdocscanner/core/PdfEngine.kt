@@ -460,13 +460,14 @@ class PdfEngine(private val context: Context) {
                         try {
                             bmp.eraseColor(android.graphics.Color.WHITE)
                             page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                            file = newFile()
-                            file.outputStream().use { stream ->
+                            val createdFile = newFile()
+                            file = createdFile
+                            createdFile.outputStream().use { stream ->
                                 check(bmp.compress(Bitmap.CompressFormat.JPEG, quality, stream)) {
                                     "Could not write rendered page ${i + 1}"
                                 }
                             }
-                            result.add(file)
+                            result.add(createdFile)
                         } catch (error: Throwable) {
                             file?.delete()
                             throw error
