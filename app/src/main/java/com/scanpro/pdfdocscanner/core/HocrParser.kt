@@ -55,3 +55,10 @@ object HocrParser {
         }
     }
 }
+
+/** Word geometry and decoded-image dimensions for one OCR page. */
+data class OcrPage(
+    val imageWidth: Int,
+    val imageHeight: Int,
+    val words: List<OcrWord>,
+)
