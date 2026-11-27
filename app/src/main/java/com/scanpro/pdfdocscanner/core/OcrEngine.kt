@@ -52,7 +52,7 @@ class OcrEngine(private val context: Context, private val pdf: PdfEngine) {
         withContext(Dispatchers.Default) {
             val base = prepareData()
             val api = TessBaseAPI()
-            val bitmap = pdf.decodeBitmap(Uri.fromFile(file), IMAGE_MAX_DIM)
+            val bitmap = pdf.decodeBitmap(Uri.fromFile(file), PdfEngine.MAX_IMAGE_DIM)
                 ?: throw IllegalStateException("The image could not be read for OCR.")
             try {
                 if (!api.init(base.absolutePath, LANGUAGES)) {
