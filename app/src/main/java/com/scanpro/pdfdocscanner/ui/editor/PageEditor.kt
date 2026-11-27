@@ -61,6 +61,7 @@ import com.scanpro.pdfdocscanner.AppContainer
 import com.scanpro.pdfdocscanner.core.EditParams
 import com.scanpro.pdfdocscanner.core.NRect
 import com.scanpro.pdfdocscanner.core.PageFilter
+import com.scanpro.pdfdocscanner.core.PageQuadGeometry
 import com.scanpro.pdfdocscanner.ui.components.ProgressDialog
 import com.scanpro.pdfdocscanner.ui.components.ScanProTopBar
 import kotlinx.coroutines.Dispatchers
@@ -456,7 +457,8 @@ private fun CropArea(
                                 val prev = (activeQuadCorner + 3) % 4
                                 val next = (activeQuadCorner + 1) % 4
                                 if (kotlin.math.hypot((q[i] - q[prev * 2]).toDouble(), (q[i + 1] - q[prev * 2 + 1]).toDouble()) > minGap &&
-                                    kotlin.math.hypot((q[i] - q[next * 2]).toDouble(), (q[i + 1] - q[next * 2 + 1]).toDouble()) > minGap
+                                    kotlin.math.hypot((q[i] - q[next * 2]).toDouble(), (q[i + 1] - q[next * 2 + 1]).toDouble()) > minGap &&
+                                    PageQuadGeometry.isValid(q)
                                 ) currentOnQuad(q)
                             } else if (active >= 0) {
                                 currentOnCrop(updateCrop(currentCrop, active, drag.x / dw, drag.y / dh, aspect, dw, dh))
