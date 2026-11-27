@@ -50,6 +50,13 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
+    testOptions {
+        unitTests {
+            // Robolectric needs AGP's merged manifest, resources, and main assets.
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 }
 

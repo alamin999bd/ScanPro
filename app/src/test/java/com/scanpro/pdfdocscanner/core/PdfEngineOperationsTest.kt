@@ -30,6 +30,9 @@ class PdfEngineOperationsTest {
     @Before
     fun setUp() {
         context = RuntimeEnvironment.getApplication()
+        context.assets.open("com/tom_roush/fontbox/resources/cmap/Identity-H").use { cmap ->
+            assertTrue("PDFBox Identity-H CMap must be available to Robolectric", cmap.read() != -1)
+        }
         PDFBoxResourceLoader.init(context)
         engine = PdfEngine(context)
         dir = File(context.cacheDir, "pdf-engine-tests").apply {
