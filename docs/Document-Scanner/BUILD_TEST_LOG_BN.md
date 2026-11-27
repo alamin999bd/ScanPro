@@ -39,8 +39,10 @@
 ## PDF text-layer font test corrections (2026-11-27)
 - Builds #86 (run `45952041353`), #87 (`45952052745`), #89 (`45952517734`) failed when PDFBox attempted to load a font in a plain JVM test without Android PDFBox resource initialization.
 - Build #91 (run `45952867570`) failed at Kotlin test compilation because `java.awt.Font` is unavailable in the Android unit-test compile environment.
+- Build #93 (run `45953402648`) failed in font coverage because the check incorrectly required the entire Bengali Unicode block and Latin characters from the Bengali-only font. This was an over-broad test expectation.
 - Corrective change: the JVM test now checks the TTF file signature and basic file integrity using only standard byte-stream APIs; it no longer depends on Android PDFBox or Java AWT.
-- A separate CI step uses Python FontTools to inspect the font cmap and verify Bangla Unicode block plus required Latin glyph coverage. This keeps font-table validation outside Android's JVM test classpath.
+- The app now embeds separate Noto Sans Bengali and Noto Sans Latin fonts and selects the font for each OCR word based on whether it contains Bengali characters.
+- A separate CI step uses Python FontTools to inspect each font cmap against the actual sample characters needed for its script, rather than demanding every code point in the full Unicode block.
 - This font check does **not** prove PDFBox writes/extracts the hidden text layer or that Bengali shaping looks correct in a PDF viewer; those remain runtime/instrumentation QA items.
 - Static Noto Sans Bengali font and its OFL license remain provisioned by CI at the production asset path.
 - Next gate: run all unit tests, then Debug and Release APK builds, output verification and artifact upload. If any stage fails, diagnose and fix before feature work.
