@@ -16,6 +16,16 @@
 - [Build ও Test Log](BUILD_TEST_LOG_BN.md)
 - [Known Issues ও Roadmap](ROADMAP_BN.md)
 
+## বাধ্যতামূলক Build Failure নিয়ম
+1. কোনো Build ব্যর্থ হলে পরবর্তী feature/ধাপে যাওয়া যাবে না।
+2. প্রথমে ব্যর্থ Build-এর সম্পূর্ণ job log দেখে root cause শনাক্ত করতে হবে।
+3. সংশ্লিষ্ট source/configuration error ঠিক করে GitHub-এ commit দিতে হবে।
+4. নতুন Build চালিয়ে **সেই সংশোধিত commit-এর Build সফল** হয়েছে কি না যাচাই করতে হবে।
+5. Build আবার ব্যর্থ হলে একইভাবে error ঠিক করে পুনরায় Build করতে হবে; সফল না হওয়া পর্যন্ত এই ধাপেই থাকতে হবে।
+6. পুরোনো সফল Build দিয়ে নতুন ব্যর্থ commit-কে সফল বলা যাবে না।
+7. কেবল সর্বশেষ branch HEAD-এর Build সফল হওয়ার পর পরবর্তী feature/ধাপে যাওয়া যাবে।
+8. Build success শুধু compilation/package তৈরির প্রমাণ; feature functionality ও বাস্তব ডিভাইস পরীক্ষা আলাদাভাবে করতে হবে।
+
 ## গুরুত্বপূর্ণ নিয়ম
 1. বিদ্যমান source audit না করে duplicate feature যোগ করা যাবে না।
 2. মূল PDF অপরিবর্তিত রেখে edit করা হলে নতুন copy তৈরি করতে হবে।
