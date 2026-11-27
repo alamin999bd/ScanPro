@@ -36,6 +36,16 @@ jobs:
           done
           ls -lh app/src/main/assets/tessdata
 
+      - name: Download Noto Sans Bengali font and OFL license
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p app/src/main/assets/fonts
+          FONT_BASE="https://raw.githubusercontent.com/google/fonts/73b3937823dfe9d7f4cdcc0b2399a1f06940430d/ofl/notosansbengali"
+          curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali.ttf "$FONT_BASE/NotoSansBengali%5Bwdth%2Cwght%5D.ttf"
+          curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali-OFL.txt "$FONT_BASE/OFL.txt"
+          test -s app/src/main/assets/fonts/NotoSansBengali.ttf
+          test -s app/src/main/assets/fonts/NotoSansBengali-OFL.txt
+          ls -lh app/src/main/assets/fonts
       - name: Run unit tests
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
