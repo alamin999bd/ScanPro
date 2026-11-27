@@ -359,6 +359,7 @@ class PdfEngine(private val context: Context) {
     /** Adds a real PDF outline/bookmark pointing to the requested 1-based page. */
     suspend fun addBookmark(input: File, out: File, title: String, pageNumber: Int): Int = withContext(Dispatchers.IO) {
         require(title.isNotBlank()) { "Enter a bookmark title" }
+        require(title.trim().length <= 120) { "Bookmark title must be 120 characters or fewer" }
         val doc = PDDocument.load(input)
         try {
             require(pageNumber in 1..doc.numberOfPages) { "Page must be between 1 and ${doc.numberOfPages}" }
@@ -802,5 +803,16 @@ fun parsePageRanges(text: String, pageCount: Int): List<Int>? {
             out.add(p)
         }
     }
+    if (out.distinct().size != out.size) return null
     return out
+}
+
+/** Parses a complete 1-based page order; every page must appear exactly once. */
+fun parsePageOrder(text: String, pageCount: Int): List<Int>? {
+    if (pageCount <= 0 || text.isBlank()) return null
+    val parts = text.split(',').map { it.trim() }
+    if (parts.size != pageCount || parts.any { it.isEmpty() }) return null
+    val pages = parts.map { it.toIntOrNull() ?: return null }
+    if (pages.any { it !in 1..pageCount } || pages.distinct().size != pageCount) return null
+    return pages
 }
