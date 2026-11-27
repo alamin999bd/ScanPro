@@ -222,7 +222,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
             ProblemReportCard()
 
             SettingsCard(title = "About") {
-                Text("ScanPro – PDF & Document Scanner", style = MaterialTheme.typography.titleSmall)
+                Text("Document Scanner", style = MaterialTheme.typography.titleSmall)
                 Text(
                     "Version ${BuildConfig.VERSION_NAME}",
                     style = MaterialTheme.typography.bodySmall,
