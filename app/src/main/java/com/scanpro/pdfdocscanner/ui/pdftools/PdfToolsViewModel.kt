@@ -395,9 +395,13 @@ class PdfToolsViewModel(
 
     /** [pageText] empty means the last page. */
     fun sign(doc: DocumentEntity, signature: android.graphics.Bitmap, pageText: String, position: Int, name: String) {
-        if (_busy.value != null) return
+        if (_busy.value != null) {
+            signature.takeUnless { it.isRecycled }?.recycle()
+            return
+        }
         val page = if (pageText.isBlank()) doc.pageCount else pageText.toIntOrNull()
         if (page == null || page < 1 || page > doc.pageCount) {
+            signature.takeUnless { it.isRecycled }?.recycle()
             _message.value = ToolMessage("Enter a page between 1 and ${doc.pageCount}.", true)
             return
         }
@@ -416,6 +420,7 @@ class PdfToolsViewModel(
                 out.delete()
                 _message.value = ToolMessage(describe(e, "The signature could not be added."), true)
             } finally {
+                signature.takeUnless { it.isRecycled }?.recycle()
                 _busy.value = null
             }
         }
