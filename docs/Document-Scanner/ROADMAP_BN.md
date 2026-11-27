@@ -19,3 +19,8 @@
 
 ## Do not overclaim
 কোনো feature শুধু menu item বা method থাকার কারণে "সম্পূর্ণ কার্যকর" বলা যাবে না। CI, automated test, sample PDF test এবং real-device test আলাদা করে report করতে হবে। CI সফল হলেও বাস্তব ডিভাইস বা বাহ্যিক PDF viewer-এ feature কাজ করছে—এমন দাবি করা যাবে না।
+
+## 2026-11-27 progress update
+- Camera/Gallery/Multi-page safeguards merged; Build #106 passed. Real camera capture and gallery behavior still need physical-device testing.
+- Filter pipeline bitmap ownership and temporary memory cleanup improved; adaptive threshold capped to a 4M-pixel working bitmap; Builds #107–#111 passed.
+- Do not consider image filters visually validated until sample-image comparisons and Samsung Galaxy M12 memory/performance QA are completed.
