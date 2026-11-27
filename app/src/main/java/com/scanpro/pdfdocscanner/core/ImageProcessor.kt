@@ -87,26 +87,13 @@ class ImageProcessor(private val pdf: PdfEngine) {
 
     /** Size of the straightened page for a source of [srcW] x [srcH] (the source size when [quad] is null). */
     fun warpedSize(srcW: Int, srcH: Int, quad: List<Float>?): Pair<Int, Int> {
-        if (quad == null || quad.size != 8) return srcW to srcH
-        fun d(a: Int, b: Int): Float {
-            val dx = (quad[a * 2] - quad[b * 2]) * srcW
-            val dy = (quad[a * 2 + 1] - quad[b * 2 + 1]) * srcH
-            return kotlin.math.sqrt(dx * dx + dy * dy)
-        }
-        var w = max(d(0, 1), d(3, 2))
-        var h = max(d(0, 3), d(1, 2))
-        val longest = max(w, h)
-        if (longest > MAX_EXPORT_DIM) {
-            val k = MAX_EXPORT_DIM / longest
-            w *= k
-            h *= k
-        }
-        return max(1, w.toInt()) to max(1, h.toInt())
+        if (quad == null) return srcW to srcH
+        return PageQuadGeometry.outputSize(srcW, srcH, quad, MAX_EXPORT_DIM) ?: (srcW to srcH)
     }
 
     /** Perspective correction: maps the quad onto a flat rectangle. Returns [src] when [quad] is null. */
     private fun warp(src: Bitmap, quad: List<Float>?): Bitmap {
-        if (quad == null || quad.size != 8) return src
+        if (quad == null || !PageQuadGeometry.isValid(quad)) return src
         val (outW, outH) = warpedSize(src.width, src.height, quad)
         val from = FloatArray(8) { i -> quad[i] * (if (i % 2 == 0) src.width else src.height) }
         val to = floatArrayOf(0f, 0f, outW.toFloat(), 0f, outW.toFloat(), outH.toFloat(), 0f, outH.toFloat())
@@ -365,13 +352,7 @@ class ImageProcessor(private val pdf: PdfEngine) {
                 area += q[i * 2] * q[j * 2 + 1] - q[j * 2] * q[i * 2 + 1]
             }
             area = kotlin.math.abs(area) / 2f
-            if (area < 0.12f) return@withContext null
-            for (i in 0 until 4) {
-                val j = (i + 1) % 4
-                val dx = q[i * 2] - q[j * 2]
-                val dy = q[i * 2 + 1] - q[j * 2 + 1]
-                if (kotlin.math.sqrt(dx * dx + dy * dy) < 0.1f) return@withContext null
-            }
+            if (!PageQuadGeometry.isValid(q, minArea = 0.12f, minEdge = 0.1f)) return@withContext null
             q
         } catch (e: Throwable) {
             null
