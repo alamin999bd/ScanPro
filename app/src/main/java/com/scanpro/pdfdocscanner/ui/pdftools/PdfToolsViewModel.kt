@@ -9,6 +9,7 @@ import com.scanpro.pdfdocscanner.core.parsePageOrder
 import com.scanpro.pdfdocscanner.data.DocumentRepository
 import com.scanpro.pdfdocscanner.data.db.DocumentEntity
 import com.scanpro.pdfdocscanner.ui.components.formatFileSize
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +54,7 @@ class PdfToolsViewModel(
                 )
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The PDFs could not be merged.", true)
             } finally {
                 _busy.value = null
@@ -87,6 +89,7 @@ class PdfToolsViewModel(
                 )
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The pages could not be extracted.", true)
             } finally {
                 _busy.value = null
@@ -111,6 +114,7 @@ class PdfToolsViewModel(
                 _message.value = ToolMessage("Saved a copy with $count pages. The original is unchanged.", false)
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Pages could not be deleted.", true)
             } finally { _busy.value = null }
         }
@@ -133,6 +137,7 @@ class PdfToolsViewModel(
                 _message.value = ToolMessage("Saved the reordered $count-page copy. The original is unchanged.", false)
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Pages could not be reordered.", true)
             } finally { _busy.value = null }
         }
@@ -150,6 +155,7 @@ class PdfToolsViewModel(
                 _message.value = ToolMessage("Rotated all $count pages by $degrees° in a new copy.", false)
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Pages could not be rotated.", true)
             } finally { _busy.value = null }
         }
@@ -171,6 +177,7 @@ class PdfToolsViewModel(
                 _message.value = ToolMessage("Added page numbers to $count pages. Original unchanged.", false)
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Page numbers could not be added.", true)
             } finally { _busy.value = null }
         }
@@ -192,6 +199,7 @@ class PdfToolsViewModel(
                     ToolMessage("Found “$query” on page(s): ${matches.joinToString { it.first.toString() }}", false)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "PDF text search failed.", true)
             } finally { _busy.value = null }
         }
@@ -218,6 +226,7 @@ class PdfToolsViewModel(
                 _message.value = ToolMessage("Added bookmark “${title.trim()}” for page $page in a new PDF copy. Original unchanged.", false)
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The bookmark could not be added.", true)
             } finally { _busy.value = null }
         }
@@ -250,6 +259,7 @@ class PdfToolsViewModel(
                 _message.value = ToolMessage("Saved a new PDF copy with the ${kind.lowercase()} on page $page. Original unchanged.", false)
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The PDF markup could not be added.", true)
             } finally { _busy.value = null }
         }
@@ -275,6 +285,7 @@ class PdfToolsViewModel(
                 )
             } catch (e: Exception) {
                 created.forEach { it.delete() }
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The PDF could not be exported.", true)
             } finally {
                 _busy.value = null
@@ -316,6 +327,7 @@ class PdfToolsViewModel(
                 }
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The PDF could not be safely optimized."), true)
             } catch (e: OutOfMemoryError) {
                 out.delete()
@@ -342,6 +354,7 @@ class PdfToolsViewModel(
                 )
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The PDF could not be locked."), true)
             } finally {
                 _busy.value = null
@@ -364,6 +377,7 @@ class PdfToolsViewModel(
                 )
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The password could not be removed."), true)
             } finally {
                 _busy.value = null
@@ -386,6 +400,7 @@ class PdfToolsViewModel(
                 )
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The watermark could not be added."), true)
             } finally {
                 _busy.value = null
@@ -418,6 +433,7 @@ class PdfToolsViewModel(
                 )
             } catch (e: Exception) {
                 out.delete()
+                if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The signature could not be added."), true)
             } finally {
                 signature.takeUnless { it.isRecycled }?.recycle()
