@@ -117,9 +117,8 @@ class PdfToolsViewModel(
 
     fun reorderPages(doc: DocumentEntity, orderText: String, name: String) {
         if (_busy.value != null) return
-        val order = orderText.split(',', ' ', ';').filter { it.isNotBlank() }.map { it.toIntOrNull() }
-        if (doc.pageCount <= 0 || order.any { it == null } || order.size != doc.pageCount ||
-            order.filterNotNull().toSet().size != doc.pageCount || order.filterNotNull().any { it !in 1..doc.pageCount }) {
+        val order = parsePageOrder(orderText, doc.pageCount)
+        if (order == null) {
             _message.value = ToolMessage("Enter all pages exactly once, separated by commas. Example: 3,1,2", true)
             return
         }
@@ -127,7 +126,7 @@ class PdfToolsViewModel(
             _busy.value = "Reordering pages…"
             val out = files.newDocFile("pdf")
             try {
-                val count = pdf.reorderPages(repo.fileOf(doc), order.filterNotNull(), out)
+                val count = pdf.reorderPages(repo.fileOf(doc), order, out)
                 val finalName = name.ifBlank { "${doc.name} (reordered)" }
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage("Saved the reordered $count-page copy. The original is unchanged.", false)
