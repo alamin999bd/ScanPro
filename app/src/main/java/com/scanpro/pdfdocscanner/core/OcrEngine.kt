@@ -47,6 +47,27 @@ class OcrEngine(private val context: Context, private val pdf: PdfEngine) {
             }
         }
 
+    /**
+     * Recognizes one image and returns word-level hOCR geometry in the same pixel
+     * coordinate space as the decoded source image. The caller can use these bounds
+     * to place an invisible, selectable text layer over the visible PDF image.
+     */
+    suspend fun recognizeImageWords(file: File): List<OcrWord> = mutex.withLock {
+        withContext(Dispatchers.Default) {
+            val base = prepareData()
+            val api = TessBaseAPI()
+            try {
+                if (!api.init(base.absolutePath, LANGUAGES)) {
+                    throw IllegalStateException("The text recognizer could not start.")
+                }
+                api.setImage(file)
+                HocrParser.parse(api.getHOCRText(0) ?: "")
+            } finally {
+                api.recycle()
+            }
+        }
+    }
+
     private fun prepareData(): File {
         val base = File(context.filesDir, "ocr")
         val tessdata = File(base, "tessdata")
