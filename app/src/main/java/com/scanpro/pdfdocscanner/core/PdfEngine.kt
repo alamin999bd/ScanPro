@@ -266,6 +266,27 @@ class PdfEngine(private val context: Context) {
         } finally { doc.close() }
     }
 
+    /** Adds a real PDF outline/bookmark pointing to the requested 1-based page. */
+    suspend fun addBookmark(input: File, out: File, title: String, pageNumber: Int): Int = withContext(Dispatchers.IO) {
+        require(title.isNotBlank()) { "Enter a bookmark title" }
+        val doc = PDDocument.load(input)
+        try {
+            require(pageNumber in 1..doc.numberOfPages) { "Page must be between 1 and ${doc.numberOfPages}" }
+            val outline = doc.documentCatalog.documentOutline ?: com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline().also {
+                doc.documentCatalog.documentOutline = it
+            }
+            val item = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem()
+            item.title = title.trim()
+            val destination = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageFitDestination()
+            destination.page = doc.getPage(pageNumber - 1)
+            item.destination = destination
+            outline.addLast(item)
+            outline.openNode()
+            out.outputStream().use { doc.save(it) }
+            doc.numberOfPages
+        } finally { doc.close() }
+    }
+
     // ---------- PDF -> Images ----------
 
     /** Renders every page to a JPEG file created by [newFile]. Returns the created files. */
