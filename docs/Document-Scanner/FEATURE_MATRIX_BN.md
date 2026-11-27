@@ -13,6 +13,6 @@
 | Add page numbers | engine, ViewModel ও UI action যোগ করা হয়েছে | functional QA বাকি |
 | Search selectable PDF text | PDFTextStripper-ভিত্তিক search যোগ করা হয়েছে; image-only scan-এ কাজ করবে না | functional QA বাকি |
 | Add PDF bookmark | PDF outline bookmark engine, ViewModel ও UI action যোগ করা হয়েছে; CI যাচাই চলমান | build/functional QA pending |
-| Text annotation / highlight | এখনো সম্পন্ন নয় | বাকি |
+| Text annotation / highlight | PDFBox দিয়ে sticky-note annotation এবং rectangular yellow highlight; PDF Tools-এ page/area input যুক্ত | CI ও sample PDF viewer QA বাকি |
 | Standard PDF viewer-এ scanned PDF search | OCR text layer না থাকায় এখনো সমর্থিত নয় | বাকি |
 | PDF split/extract pages | source audit-এ আছে | functional QA বাকি |
