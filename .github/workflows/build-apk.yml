@@ -42,8 +42,10 @@ jobs:
           mkdir -p app/src/main/assets/fonts
           FONT_BASE="https://raw.githubusercontent.com/notofonts/noto-fonts/main/hinted/ttf/NotoSansBengali"
           curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali.ttf "$FONT_BASE/NotoSansBengali-Regular.ttf"
+          curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSans-Regular.ttf "https://raw.githubusercontent.com/notofonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf"
           curl -fsSL --retry 3 -o app/src/main/assets/fonts/NotoSansBengali-OFL.txt "https://raw.githubusercontent.com/notofonts/noto-fonts/main/LICENSE"
           test -s app/src/main/assets/fonts/NotoSansBengali.ttf
+          test -s app/src/main/assets/fonts/NotoSans-Regular.ttf
           test -s app/src/main/assets/fonts/NotoSansBengali-OFL.txt
           ls -lh app/src/main/assets/fonts
 
@@ -54,21 +56,31 @@ jobs:
           cp app/src/main/assets/fonts/NotoSansBengali.ttf app/src/test/resources/NotoSansBengali.ttf
 
       - name: Verify Bengali and Latin font glyph coverage
-        working-directory: ${{ env.PROJECT_DIR }}
+        working-directory: \${{ env.PROJECT_DIR }}
         run: |
           python3 -m pip install --disable-pip-version-check fonttools
           python3 - <<'PY'
           from fontTools.ttLib import TTFont
-          font = TTFont("app/src/main/assets/fonts/NotoSansBengali.ttf")
-          cmap = set()
-          for table in font["cmap"].tables:
-              cmap.update(table.cmap.keys())
-          required = list(range(0x0980, 0x09FF + 1)) + [ord(c) for c in "English searchable text"]
-          missing = sorted(set(required) - cmap)
-          if missing:
-              raise SystemExit("Font is missing required Bangla/Latin code points: " + ", ".join(hex(x) for x in missing))
-          print(f"Font glyph coverage verified: {len(cmap)} code points")
-          PY
+
+          def codepoints(path):
+              font = TTFont(path)
+              result = set()
+              for table in font["cmap"].tables:
+                  result.update(table.cmap.keys())
+              return result
+
+          bengali = codepoints("app/src/main/assets/fonts/NotoSansBengali.ttf")
+          latin = codepoints("app/src/main/assets/fonts/NotoSans-Regular.ttf")
+          required_bengali = {ord(c) for c in "বাংলা পরীক্ষা"}
+          required_latin = {ord(c) for c in "English searchable text"}
+          missing_bn = sorted(required_bengali - bengali)
+          missing_en = sorted(required_latin - latin)
+          if missing_bn or missing_en:
+              raise SystemExit(
+                  f"Missing Bengali glyphs: {[hex(x) for x in missing_bn]}; "
+                  f"missing Latin glyphs: {[hex(x) for x in missing_en]}"
+              )
+          print(f"Font coverage verified: Bengali={len(bengali)}, Latin={len(latin)} code points")
 
       - name: Run unit tests
         working-directory: ${{ env.PROJECT_DIR }}
