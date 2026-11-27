@@ -223,6 +223,38 @@ class PdfToolsViewModel(
         }
     }
 
+    fun addMarkup(doc: DocumentEntity, pageText: String, kind: String, note: String, xText: String, yText: String, widthText: String, heightText: String, name: String) {
+        if (_busy.value != null) return
+        val page = pageText.toIntOrNull()
+        val x = xText.toFloatOrNull()
+        val y = yText.toFloatOrNull()
+        val width = widthText.toFloatOrNull()
+        val height = heightText.toFloatOrNull()
+        if (doc.pageCount <= 0 || page == null || page !in 1..doc.pageCount ||
+            x == null || y == null || width == null || height == null) {
+            _message.value = ToolMessage("Enter a valid page and numeric area values.", true)
+            return
+        }
+        if (kind == "NOTE" && note.isBlank()) {
+            _message.value = ToolMessage("Enter the note text.", true)
+            return
+        }
+        viewModelScope.launch {
+            _busy.value = if (kind == "NOTE") "Adding text note…" else "Adding highlight…"
+            val out = files.newDocFile("pdf")
+            try {
+                val count = pdf.addPageMarkup(repo.fileOf(doc), out, page, kind, note, x, y, width, height)
+                val suffix = if (kind == "NOTE") "annotated" else "highlighted"
+                val finalName = name.ifBlank { "${doc.name} ($suffix)" }
+                repo.addDocument(finalName, out, "pdf", count)
+                _message.value = ToolMessage("Saved a new PDF copy with the ${kind.lowercase()} on page $page. Original unchanged.", false)
+            } catch (e: Exception) {
+                out.delete()
+                _message.value = ToolMessage(e.message ?: "The PDF markup could not be added.", true)
+            } finally { _busy.value = null }
+        }
+    }
+
     fun toImages(doc: DocumentEntity) {
         if (_busy.value != null) return
         viewModelScope.launch {
