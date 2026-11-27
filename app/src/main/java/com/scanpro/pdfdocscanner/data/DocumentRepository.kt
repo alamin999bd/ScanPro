@@ -59,6 +59,12 @@ class DocumentRepository(
         )
     }
 
+    /** Refreshes the stored size after an in-place file replacement. */
+    suspend fun refreshDocumentSize(id: Long, file: File) = withContext(Dispatchers.IO) {
+        val current = docs.getById(id) ?: return@withContext
+        docs.update(current.copy(sizeBytes = file.length()))
+    }
+
     suspend fun renameDocument(doc: DocumentEntity, newName: String) = withContext(Dispatchers.IO) {
         docs.update(doc.copy(name = FileStore.sanitizeName(newName)))
     }
