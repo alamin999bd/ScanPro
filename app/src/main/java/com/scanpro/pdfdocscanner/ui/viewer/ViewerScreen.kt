@@ -53,10 +53,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -206,18 +208,21 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float, s
                             )
                             val pageMarkups = state.pageMarkups.getOrNull(index).orEmpty()
                             if (pageMarkups.isNotEmpty()) {
+                                var overlaySize by remember(index, renderWidth) { mutableStateOf(IntSize.Zero) }
                                 Canvas(
-                                    modifier = Modifier.fillMaxSize().pointerInput(pageMarkups) {
-                                        detectTapGestures { tap ->
-                                            selectedNote = pageMarkups.firstOrNull { markup ->
-                                                markup.kind == "NOTE" &&
-                                                    tap.x >= markup.left * size.width &&
-                                                    tap.x <= (markup.left + markup.width) * size.width &&
-                                                    tap.y >= markup.top * size.height &&
-                                                    tap.y <= (markup.top + markup.height) * size.height
-                                            }?.note?.takeIf { it.isNotBlank() }
-                                        }
-                                    },
+                                    modifier = Modifier.fillMaxSize()
+                                        .onSizeChanged { overlaySize = it }
+                                        .pointerInput(pageMarkups, overlaySize) {
+                                            detectTapGestures { tap ->
+                                                selectedNote = pageMarkups.firstOrNull { markup ->
+                                                    markup.kind == "NOTE" &&
+                                                        tap.x >= markup.left * overlaySize.width &&
+                                                        tap.x <= (markup.left + markup.width) * overlaySize.width &&
+                                                        tap.y >= markup.top * overlaySize.height &&
+                                                        tap.y <= (markup.top + markup.height) * overlaySize.height
+                                                }?.note?.takeIf { it.isNotBlank() }
+                                            }
+                                        },
                                 ) {
                                     pageMarkups.forEach { markup ->
                                         val topLeft = Offset(markup.left * size.width, markup.top * size.height)
