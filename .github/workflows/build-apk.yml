@@ -36,6 +36,12 @@ jobs:
           done
           ls -lh app/src/main/assets/tessdata
 
+      - name: Run unit tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --console=plain testDebugUnitTest
+
       - name: Build debug and release APKs
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
