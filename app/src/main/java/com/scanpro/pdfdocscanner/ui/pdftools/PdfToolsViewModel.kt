@@ -57,6 +57,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The PDFs could not be merged.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally {
                 _busy.value = null
             }
@@ -93,6 +97,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The pages could not be extracted.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally {
                 _busy.value = null
             }
@@ -119,6 +127,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Pages could not be deleted.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally { _busy.value = null }
         }
     }
@@ -143,6 +155,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Pages could not be reordered.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally { _busy.value = null }
         }
     }
@@ -162,6 +178,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Pages could not be rotated.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally { _busy.value = null }
         }
     }
@@ -185,6 +205,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "Page numbers could not be added.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally { _busy.value = null }
         }
     }
@@ -207,6 +231,9 @@ class PdfToolsViewModel(
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "PDF text search failed.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                _message.value = ToolMessage("This PDF is too large to search on this phone.", true)
             } finally { _busy.value = null }
         }
     }
@@ -235,6 +262,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The bookmark could not be added.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally { _busy.value = null }
         }
     }
@@ -269,6 +300,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The PDF markup could not be added.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally { _busy.value = null }
         }
     }
@@ -297,6 +332,10 @@ class PdfToolsViewModel(
                 created.forEach { it.delete() }
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(e.message ?: "The PDF could not be exported.", true)
+            }
+            catch (e: OutOfMemoryError) {
+                created.forEach { it.delete() }
+                _message.value = ToolMessage("This PDF is too large to export on this phone.", true)
             } finally {
                 _busy.value = null
             }
@@ -388,6 +427,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The PDF could not be locked."), true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally {
                 _busy.value = null
             }
@@ -412,6 +455,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The password could not be removed."), true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally {
                 _busy.value = null
             }
@@ -436,6 +483,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The watermark could not be added."), true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally {
                 _busy.value = null
             }
@@ -470,6 +521,10 @@ class PdfToolsViewModel(
                 out.delete()
                 if (e is CancellationException) throw e
                 _message.value = ToolMessage(describe(e, "The signature could not be added."), true)
+            }
+            catch (e: OutOfMemoryError) {
+                out.delete()
+                _message.value = ToolMessage("This PDF is too large to process on this phone.", true)
             } finally {
                 signature.takeUnless { it.isRecycled }?.recycle()
                 _busy.value = null
