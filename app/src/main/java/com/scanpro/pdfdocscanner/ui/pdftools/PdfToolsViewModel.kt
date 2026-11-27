@@ -47,6 +47,7 @@ class PdfToolsViewModel(
             try {
                 val pages = pdf.merge(docs.map { repo.fileOf(it) }, out)
                 val finalName = name.ifBlank { FileStore.defaultScanName("Merged") }
+                requireValidPdfOutput(out, pages)
                 repo.addDocument(finalName, out, "pdf", pages)
                 _message.value = ToolMessage(
                     "Merged ${docs.size} PDFs into \"${FileStore.sanitizeName(finalName)}\" ($pages pages). It is saved in My Documents.",
@@ -82,6 +83,7 @@ class PdfToolsViewModel(
             try {
                 val count = pdf.extractPages(repo.fileOf(doc), pages, out)
                 val finalName = name.ifBlank { "${doc.name} (extract)" }
+                requireValidPdfOutput(out, count)
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage(
                     "Created \"${FileStore.sanitizeName(finalName)}\" with $count ${if (count == 1) "page" else "pages"}. It is saved in My Documents.",
@@ -110,6 +112,7 @@ class PdfToolsViewModel(
             try {
                 val count = pdf.deletePages(repo.fileOf(doc), pages, out)
                 val finalName = name.ifBlank { "${doc.name} (edited)" }
+                requireValidPdfOutput(out, count)
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage("Saved a copy with $count pages. The original is unchanged.", false)
             } catch (e: Exception) {
@@ -133,6 +136,7 @@ class PdfToolsViewModel(
             try {
                 val count = pdf.reorderPages(repo.fileOf(doc), order, out)
                 val finalName = name.ifBlank { "${doc.name} (reordered)" }
+                requireValidPdfOutput(out, count)
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage("Saved the reordered $count-page copy. The original is unchanged.", false)
             } catch (e: Exception) {
@@ -151,6 +155,7 @@ class PdfToolsViewModel(
             try {
                 val count = pdf.rotatePages(repo.fileOf(doc), degrees, out)
                 val finalName = name.ifBlank { "${doc.name} (rotated)" }
+                requireValidPdfOutput(out, count)
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage("Rotated all $count pages by $degrees° in a new copy.", false)
             } catch (e: Exception) {
@@ -173,6 +178,7 @@ class PdfToolsViewModel(
             try {
                 val count = pdf.addPageNumbers(repo.fileOf(doc), out)
                 val finalName = name.ifBlank { "${doc.name} (numbered)" }
+                requireValidPdfOutput(out, count)
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage("Added page numbers to $count pages. Original unchanged.", false)
             } catch (e: Exception) {
@@ -222,6 +228,7 @@ class PdfToolsViewModel(
             try {
                 val count = pdf.addBookmark(repo.fileOf(doc), out, title, page)
                 val finalName = name.ifBlank { "${doc.name} (bookmarked)" }
+                requireValidPdfOutput(out, count)
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage("Added bookmark “${title.trim()}” for page $page in a new PDF copy. Original unchanged.", false)
             } catch (e: Exception) {
@@ -255,6 +262,7 @@ class PdfToolsViewModel(
                 val count = pdf.addPageMarkup(repo.fileOf(doc), out, page, kind, note, x, y, width, height)
                 val suffix = if (kind == "NOTE") "annotated" else "highlighted"
                 val finalName = name.ifBlank { "${doc.name} ($suffix)" }
+                requireValidPdfOutput(out, count)
                 repo.addDocument(finalName, out, "pdf", count)
                 _message.value = ToolMessage("Saved a new PDF copy with the ${kind.lowercase()} on page $page. Original unchanged.", false)
             } catch (e: Exception) {
@@ -292,6 +300,26 @@ class PdfToolsViewModel(
             }
         }
     }
+    /** Rejects incomplete/corrupt PDF outputs before they enter the document library. */
+    private fun requireValidPdfOutput(file: java.io.File, pageCount: Int) {
+        check(pageCount > 0) { "The PDF operation produced no pages." }
+        check(file.isFile && file.length() >= 8L) { "The PDF file is empty or incomplete." }
+        val header = file.inputStream().use { input ->
+            ByteArray(5).also { bytes ->
+                var offset = 0
+                while (offset < bytes.size) {
+                    val read = input.read(bytes, offset, bytes.size - offset)
+                    if (read < 0) break
+                    offset += read
+                }
+                check(offset == bytes.size) { "The PDF file is incomplete." }
+            }
+        }
+        check(header.contentEquals("%PDF-".toByteArray(Charsets.US_ASCII))) {
+            "The generated file is not a valid PDF."
+        }
+    }
+
     private fun describe(e: Exception, fallback: String): String =
         if (e.javaClass.simpleName == "InvalidPasswordException") {
             "The password is wrong, or this PDF is protected and needs its password."
@@ -318,7 +346,8 @@ class PdfToolsViewModel(
                     )
                 } else {
                     val finalName = name.ifBlank { "${doc.name} (optimized)" }
-                    repo.addDocument(finalName, out, "pdf", pages)
+                    requireValidPdfOutput(out, pages)
+                repo.addDocument(finalName, out, "pdf", pages)
                     _message.value = ToolMessage(
                         "Saved \"${FileStore.sanitizeName(finalName)}\": ${formatFileSize(before)} → ${formatFileSize(after)}. " +
                             "Searchable text and the original file are preserved.",
@@ -344,7 +373,8 @@ class PdfToolsViewModel(
             _busy.value = "Locking PDF…"
             val out = files.newDocFile("pdf")
             try {
-                pdf.protect(repo.fileOf(doc), out, password)
+                val pages = pdf.protect(repo.fileOf(doc), out, password)
+                requireValidPdfOutput(out, pages)
                 val finalName = name.ifBlank { "${doc.name} (locked)" }
                 // pageCount 0 marks a password-protected file in the lists.
                 repo.addDocument(finalName, out, "pdf", 0)
@@ -370,6 +400,7 @@ class PdfToolsViewModel(
             try {
                 val pages = pdf.unlock(repo.fileOf(doc), out, password)
                 val finalName = name.ifBlank { "${doc.name} (unlocked)" }
+                requireValidPdfOutput(out, pages)
                 repo.addDocument(finalName, out, "pdf", pages)
                 _message.value = ToolMessage(
                     "Saved \"${FileStore.sanitizeName(finalName)}\" without a password ($pages pages).",
@@ -393,6 +424,7 @@ class PdfToolsViewModel(
             try {
                 val pages = pdf.watermark(repo.fileOf(doc), out, text)
                 val finalName = name.ifBlank { "${doc.name} (watermark)" }
+                requireValidPdfOutput(out, pages)
                 repo.addDocument(finalName, out, "pdf", pages)
                 _message.value = ToolMessage(
                     "Saved \"${FileStore.sanitizeName(finalName)}\" with the watermark on $pages ${if (pages == 1) "page" else "pages"}.",
@@ -426,6 +458,7 @@ class PdfToolsViewModel(
             try {
                 val pages = pdf.sign(repo.fileOf(doc), out, signature, page, position)
                 val finalName = name.ifBlank { "${doc.name} (signed)" }
+                requireValidPdfOutput(out, pages)
                 repo.addDocument(finalName, out, "pdf", pages)
                 _message.value = ToolMessage(
                     "Saved \"${FileStore.sanitizeName(finalName)}\" with your signature on page $page.",
