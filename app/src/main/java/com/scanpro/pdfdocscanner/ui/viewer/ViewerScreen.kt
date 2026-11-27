@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -37,6 +38,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +59,7 @@ import com.scanpro.pdfdocscanner.ui.components.containerViewModel
 import com.scanpro.pdfdocscanner.ui.components.rememberDocExporter
 import com.scanpro.pdfdocscanner.ui.components.shareDocument
 import kotlin.math.min
+import kotlinx.coroutines.launch
 
 private val ZOOM_LEVELS = listOf(1f, 1.5f, 2f, 3f)
 
@@ -148,6 +151,7 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float) {
     val listState = rememberLazyListState()
     val horizontal = rememberScrollState() // shared so all zoomed pages pan together
     val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val pageWidth = maxWidth * zoom
@@ -155,7 +159,7 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float) {
 
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(top = if (state.bookmarks.isNotEmpty()) 52.dp else 0.dp),
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -188,6 +192,27 @@ private fun PdfPages(vm: ViewerViewModel, state: ViewerState.Pdf, zoom: Float) {
                         } else {
                             CircularProgressIndicator()
                         }
+                    }
+                }
+            }
+        }
+
+        if (state.bookmarks.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                state.bookmarks.forEach { bookmark ->
+                    TextButton(onClick = {
+                        scope.launch { listState.animateScrollToItem((bookmark.pageNumber - 1).coerceIn(0, state.pageSizes.lastIndex)) }
+                    }) {
+                        Text("${bookmark.title} · ${bookmark.pageNumber}")
                     }
                 }
             }
