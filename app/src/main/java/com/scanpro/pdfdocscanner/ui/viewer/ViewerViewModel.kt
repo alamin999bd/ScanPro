@@ -137,7 +137,8 @@ class ViewerViewModel(
     }
 
     suspend fun render(index: Int, widthPx: Int): Bitmap? {
-        val key = "$index@$widthPx"
+        val safeWidth = widthPx.coerceIn(200, MAX_RENDER_WIDTH)
+        val key = "$index@$safeWidth"
         cache.get(key)?.let { return it }
         return withContext(Dispatchers.IO) {
             renderLock.withLock {
@@ -146,7 +147,6 @@ class ViewerViewModel(
                 val r = renderer ?: return@withLock null
                 try {
                     r.openPage(index).use { page ->
-                        val safeWidth = widthPx.coerceIn(200, MAX_RENDER_WIDTH)
                         val h = (page.height.toFloat() * safeWidth / page.width).toInt().coerceAtLeast(1)
                         val bmp = Bitmap.createBitmap(safeWidth, h, Bitmap.Config.ARGB_8888)
                         try {
