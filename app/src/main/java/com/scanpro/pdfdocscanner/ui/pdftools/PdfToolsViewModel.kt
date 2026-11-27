@@ -284,9 +284,11 @@ class PdfToolsViewModel(
                     newFile = { files.newDocFile("jpg").also { created.add(it) } },
                     onProgress = { done, total -> _busy.value = "Exporting page $done of $total…" },
                 )
-                images.forEachIndexed { i, file ->
-                    repo.addDocument("${doc.name} - page ${i + 1}", file, "image", 1)
-                }
+                check(images.isNotEmpty()) { "No pages could be exported from this PDF." }
+                repo.addDocuments(
+                    images.mapIndexed { i, file -> Triple("${doc.name} - page ${i + 1}", file, 1) },
+                    "image",
+                )
                 _message.value = ToolMessage(
                     "Saved ${images.size} ${if (images.size == 1) "image" else "images"} to My Documents.",
                     false,

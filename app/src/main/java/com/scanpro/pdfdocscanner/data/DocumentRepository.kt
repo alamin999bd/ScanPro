@@ -59,6 +59,25 @@ class DocumentRepository(
         )
     }
 
+    /** Registers a batch of generated files in one Room insert transaction. */
+    suspend fun addDocuments(
+        items: List<Triple<String, File, Int>>,
+        type: String,
+    ): List<Long> = withContext(Dispatchers.IO) {
+        require(items.isNotEmpty()) { "No generated files were produced." }
+        docs.insertAll(items.map { (name, file, pageCount) ->
+            require(file.isFile && file.length() > 0L) { "A generated file is empty." }
+            DocumentEntity(
+                name = FileStore.sanitizeName(name),
+                fileName = file.name,
+                type = type,
+                pageCount = pageCount,
+                sizeBytes = file.length(),
+                folderId = null,
+            )
+        })
+    }
+
     /** Refreshes the stored size after an in-place file replacement. */
     suspend fun refreshDocumentSize(id: Long, file: File) = withContext(Dispatchers.IO) {
         val current = docs.getById(id) ?: return@withContext

@@ -27,6 +27,9 @@ interface DocumentDao {
     @Insert
     suspend fun insert(doc: DocumentEntity): Long
 
+    @Insert
+    suspend fun insertAll(docs: List<DocumentEntity>): List<Long>
+
     @Update
     suspend fun update(doc: DocumentEntity)
 
