@@ -287,6 +287,55 @@ class PdfEngine(private val context: Context) {
         } finally { doc.close() }
     }
 
+    /** Adds a PDF text-note annotation or a yellow rectangular highlight to a page. Coordinates are points from the page's lower-left corner. */
+    suspend fun addPageMarkup(
+        input: File,
+        out: File,
+        pageNumber: Int,
+        kind: String,
+        note: String,
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+    ): Int = withContext(Dispatchers.IO) {
+        require(kind == "NOTE" || kind == "HIGHLIGHT") { "Unsupported annotation type" }
+        require(x >= 0f && y >= 0f && width > 0f && height > 0f) { "Enter a valid annotation area" }
+        val doc = PDDocument.load(input)
+        try {
+            require(pageNumber in 1..doc.numberOfPages) { "Page must be between 1 and ${doc.numberOfPages}" }
+            val page = doc.getPage(pageNumber - 1)
+            val box = page.mediaBox
+            require(x + width <= box.width && y + height <= box.height) { "Annotation area is outside the page" }
+            val rect = PDRectangle(x, y, width, height)
+            if (kind == "NOTE") {
+                require(note.isNotBlank()) { "Enter note text" }
+                val annotation = com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationText()
+                annotation.rectangle = rect
+                annotation.contents = note.trim()
+                annotation.titlePopup = "Document Scanner"
+                annotation.isOpen = false
+                page.annotations.add(annotation)
+            } else {
+                val annotation = com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup(
+                    com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup.SUB_TYPE_HIGHLIGHT
+                )
+                annotation.rectangle = rect
+                annotation.quadPoints = floatArrayOf(
+                    x, y + height, x + width, y + height,
+                    x, y, x + width, y
+                )
+                annotation.color = com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor(
+                    floatArrayOf(1f, 1f, 0f),
+                    com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceRGB.INSTANCE
+                )
+                page.annotations.add(annotation)
+            }
+            out.outputStream().use { doc.save(it) }
+            doc.numberOfPages
+        } finally { doc.close() }
+    }
+
     // ---------- PDF -> Images ----------
 
     /** Renders every page to a JPEG file created by [newFile]. Returns the created files. */
