@@ -356,21 +356,27 @@ class PdfEngine(private val context: Context) {
         } finally { doc.close() }
     }
 
-    /** Reads top-level PDF outline entries for in-app bookmark navigation. */
+    /** Reads nested PDF outline entries for in-app bookmark navigation. */
     suspend fun readBookmarks(input: File): List<PdfBookmark> = withContext(Dispatchers.IO) {
         PDDocument.load(input).use { doc ->
             val outline = doc.documentCatalog.documentOutline ?: return@withContext emptyList()
             val result = ArrayList<PdfBookmark>()
-            var item = outline.firstChild
-            while (item != null) {
-                val destination = item.destination as? com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination
-                val page = destination?.page
-                val pageIndex = if (page == null) -1 else doc.pages.indexOf(page)
-                if (pageIndex >= 0 && item.title.isNotBlank()) {
-                    result += PdfBookmark(item.title, pageIndex + 1)
+
+            fun appendChildren(node: com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode) {
+                var item = node.firstChild
+                while (item != null) {
+                    val destination = item.destination as? com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination
+                    val page = destination?.page
+                    val pageIndex = if (page == null) -1 else doc.pages.indexOf(page)
+                    if (pageIndex >= 0 && item.title.isNotBlank()) {
+                        result += PdfBookmark(item.title, pageIndex + 1)
+                    }
+                    appendChildren(item)
+                    item = item.nextSibling
                 }
-                item = item.nextSibling
             }
+
+            appendChildren(outline)
             result
         }
     }
