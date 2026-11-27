@@ -18,18 +18,15 @@ import java.io.IOException
 
 /**
  * Offline text recognition (OCR) with Tesseract, for Bangla and English.
- * The language data files are bundled inside the app (assets/tessdata), so nothing is downloaded
- * on the phone and the INTERNET permission is not needed.
+ * Language data is bundled in the app; recognition never uploads documents.
  */
 class OcrEngine(private val context: Context, private val pdf: PdfEngine) {
-
     class LanguageDataMissing : Exception(
         "The offline language data is not included in this build, so text recognition is unavailable."
     )
 
     private val mutex = Mutex()
 
-    /** Reads all pages of [file] ([type] is "pdf" or "image") and returns the recognized text. */
     suspend fun extractText(file: File, type: String, onProgress: (Int, Int) -> Unit): String =
         mutex.withLock {
             withContext(Dispatchers.Default) {
@@ -48,21 +45,23 @@ class OcrEngine(private val context: Context, private val pdf: PdfEngine) {
         }
 
     /**
-     * Recognizes one image and returns word-level hOCR geometry in the same pixel
-     * coordinate space as the decoded source image. The caller can use these bounds
-     * to place an invisible, selectable text layer over the visible PDF image.
+     * Recognizes one source image and returns hOCR bounds measured against the exact
+     * EXIF-corrected bitmap that will be placed in the PDF.
      */
-    suspend fun recognizeImageWords(file: File): List<OcrWord> = mutex.withLock {
+    suspend fun recognizeImagePage(file: File): OcrPage = mutex.withLock {
         withContext(Dispatchers.Default) {
             val base = prepareData()
             val api = TessBaseAPI()
+            val bitmap = pdf.decodeBitmap(Uri.fromFile(file), IMAGE_MAX_DIM)
+                ?: throw IllegalStateException("The image could not be read for OCR.")
             try {
                 if (!api.init(base.absolutePath, LANGUAGES)) {
                     throw IllegalStateException("The text recognizer could not start.")
                 }
-                api.setImage(file)
-                HocrParser.parse(api.getHOCRText(0) ?: "")
+                api.setImage(bitmap)
+                OcrPage(bitmap.width, bitmap.height, HocrParser.parse(api.getHOCRText(0) ?: ""))
             } finally {
+                bitmap.recycle()
                 api.recycle()
             }
         }
