@@ -479,42 +479,30 @@ class PdfEngine(private val context: Context) {
      * Shrinks a PDF by re-drawing every page as a JPEG [maxWidthPx] wide.
      * Trade-off: text becomes part of the picture (it can no longer be selected or searched).
      */
-    suspend fun compress(
-        input: File,
-        out: File,
-        quality: Int,
-        maxWidthPx: Int,
-        onProgress: (Int, Int) -> Unit = { _, _ -> },
-    ): Int = withContext(Dispatchers.IO) {
-        val doc = PDDocument()
-        try {
-            ParcelFileDescriptor.open(input, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
-                PdfRenderer(pfd).use { renderer ->
-                    val total = renderer.pageCount
-                    for (i in 0 until total) {
-                        renderer.openPage(i).use { page ->
-                            val ptW = page.width.toFloat()
-                            val ptH = page.height.toFloat()
-                            val scale = maxWidthPx / ptW
-                            val bmp = Bitmap.createBitmap(
-                                maxWidthPx, (ptH * scale).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888
-                            )
-                            bmp.eraseColor(android.graphics.Color.WHITE)
-                            page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                            val pdPage = PDPage(PDRectangle(ptW, ptH))
-                            doc.addPage(pdPage)
-                            val img = JPEGFactory.createFromImage(doc, bmp, quality / 100f)
-                            PDPageContentStream(doc, pdPage).use { cs -> cs.drawImage(img, 0f, 0f, ptW, ptH) }
-                            bmp.recycle()
-                        }
-                        onProgress(i + 1, total)
-                    }
-                }
+    suspend fun optimizePreservingText(input: File, out: File): Int = withContext(Dispatchers.IO) {
+        fun extractText(file: File): Pair<Int, String> {
+            PDDocument.load(file).use { document ->
+                val stripper = com.tom_roush.pdfbox.text.PDFTextStripper().apply { sortByPosition = true }
+                return document.numberOfPages to stripper.getText(document)
             }
-            out.outputStream().use { doc.save(it) }
-            doc.numberOfPages
+        }
+
+        val before = extractText(input)
+        val document = PDDocument.load(input)
+        try {
+            out.outputStream().use { document.save(it) }
         } finally {
-            doc.close()
+            document.close()
+        }
+
+        try {
+            val after = extractText(out)
+            check(after.first == before.first) { "Optimization changed the PDF page count" }
+            check(after.second == before.second) { "Optimization changed searchable PDF text; output was rejected" }
+            after.first
+        } catch (error: Exception) {
+            out.delete()
+            throw error
         }
     }
 
