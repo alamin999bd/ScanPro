@@ -46,11 +46,29 @@ jobs:
           test -s app/src/main/assets/fonts/NotoSansBengali.ttf
           test -s app/src/main/assets/fonts/NotoSansBengali-OFL.txt
           ls -lh app/src/main/assets/fonts
+
       - name: Prepare font for PDF text-layer tests
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           mkdir -p app/src/test/resources
           cp app/src/main/assets/fonts/NotoSansBengali.ttf app/src/test/resources/NotoSansBengali.ttf
+
+      - name: Verify Bengali and Latin font glyph coverage
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 -m pip install --disable-pip-version-check fonttools
+          python3 - <<'PY'
+          from fontTools.ttLib import TTFont
+          font = TTFont("app/src/main/assets/fonts/NotoSansBengali.ttf")
+          cmap = set()
+          for table in font["cmap"].tables:
+              cmap.update(table.cmap.keys())
+          required = list(range(0x0980, 0x09FF + 1)) + [ord(c) for c in "English searchable text"]
+          missing = sorted(set(required) - cmap)
+          if missing:
+              raise SystemExit("Font is missing required Bangla/Latin code points: " + ", ".join(hex(x) for x in missing))
+          print(f"Font glyph coverage verified: {len(cmap)} code points")
+          PY
 
       - name: Run unit tests
         working-directory: ${{ env.PROJECT_DIR }}
