@@ -107,3 +107,13 @@ Read `docs/PROJECT_MASTER_RECORD_BN.md` and this file, verify latest branch HEAD
 - Serial 10 packaging change: add `git archive` ZIP of tracked source at the exact checked-out commit, validate ZIP integrity, and include it in the same final GitHub Actions artifact with Debug/Release APKs and signing reports. CI-provisioned OCR traineddata and font binaries are downloaded during workflow and are intentionally not committed as source; build workflow recreates them.
 - Next gate: commit packaging/docs update, run a fresh workflow on that exact new HEAD, verify every job step and artifact contains both APKs, signing reports and `Document-Scanner-Source.zip`. If any step fails, inspect logs and rebuild latest HEAD. No final links until this gate passes.
 - No physical Samsung Galaxy M12 testing has been performed in this session; device QA remains a separate user-side step after final delivery.
+
+
+## 2026-11-27 — User video feedback: PDF save recovery + theme refresh
+- Video review: camera scan and page editor were reachable; the editor showed Crop & Rotate, Filters, Adjust; after selecting Save, the UI remained on “Creating PDF…” through the end of the 121-second recording. This confirms a user-visible stuck-save symptom, not its exact device-side root cause.
+- Code change on `document-scanner-premium`: the normal scan save path now exports the image-based PDF first using `PdfEngine.imagesToPdf`, validates that the output file is non-empty, registers it in the document library, and returns the success screen without waiting for Tesseract OCR.
+- OCR text extraction is now a best-effort background task after successful PDF registration; OCR failure does not delete or invalidate the saved PDF. App-level OCR text search remains available when recognition succeeds. The primary scan-save path no longer embeds the invisible OCR text layer in the exported PDF; do not claim that these newly saved PDFs are searchable in third-party PDF readers until that path is separately restored and tested.
+- Theme palette refreshed from indigo/purple to teal + warm coral with updated light/dark color schemes. The editor top-right action now displays “Apply” alongside the check icon for clearer affordance.
+- App version bumped to 0.7.0 / versionCode 9; applicationId remains unchanged; minSdk 26 and targetSdk 35 remain compatible in principle with Android 13 (API 33).
+- Latest code commit: `471ce385368d24036f222e0c2ca8006b058bfd74`. GitHub combined status currently reports no status entries; CI for this new HEAD has not yet been verified. Do not distribute a new APK until a successful build for the latest HEAD is confirmed.
+- Samsung Galaxy M12 physical-device QA remains pending. No claim of device testing is made.
