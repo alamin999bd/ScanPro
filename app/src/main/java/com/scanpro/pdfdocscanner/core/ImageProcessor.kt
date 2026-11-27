@@ -64,22 +64,38 @@ class ImageProcessor(private val pdf: PdfEngine) {
 
     /** Rotation + look only (crop is shown as an overlay in the editor). */
     suspend fun preview(source: Bitmap, params: EditParams): Bitmap = withContext(Dispatchers.Default) {
-        applyLook(rotate(warp(source, params.quad), params.rotation), params)
+        val warped = warp(source, params.quad)
+        val rotated = rotate(warped, params.rotation)
+        try {
+            applyLook(rotated, params)
+        } finally {
+            if (warped !== source && warped !== rotated && !warped.isRecycled) warped.recycle()
+            if (rotated !== source && !rotated.isRecycled) {
+                // applyLook returns a distinct bitmap when it creates one; keep that result alive.
+                // If it returns the input, the editor owns the source and this preview does not.
+            }
+        }
     }
 
     /** Full-resolution export of the edit to a new JPEG file. Returns false on failure. */
     suspend fun export(input: File, output: File, params: EditParams, quality: Int = 92): Boolean =
         withContext(Dispatchers.Default) {
+            var source: Bitmap? = null
+            val owned = LinkedHashSet<Bitmap>()
             try {
-                val source = loadBitmap(input, MAX_EXPORT_DIM) ?: return@withContext false
-                val rotated = rotate(warp(source, params.quad), params.rotation)
-                val cropped = crop(rotated, params.crop)
-                val result = applyLook(cropped, params)
+                source = loadBitmap(input, MAX_EXPORT_DIM) ?: return@withContext false
+                owned.add(source)
+                val warped = warp(source, params.quad).also { if (it !== source) owned.add(it) }
+                val rotated = rotate(warped, params.rotation).also { if (it !== warped) owned.add(it) }
+                val cropped = crop(rotated, params.crop).also { if (it !== rotated) owned.add(it) }
+                val result = applyLook(cropped, params).also { if (it !== cropped) owned.add(it) }
                 output.outputStream().use { result.compress(Bitmap.CompressFormat.JPEG, quality, it) }
                 true
             } catch (ignored: Throwable) {
                 // Includes OutOfMemoryError on very large images: caller reports a clear message.
                 false
+            } finally {
+                owned.forEach { if (!it.isRecycled) it.recycle() }
             }
         }
 
@@ -126,27 +142,52 @@ class ImageProcessor(private val pdf: PdfEngine) {
     // ---------- look ----------
 
     private fun applyLook(input: Bitmap, p: EditParams): Bitmap {
-        var cur = input
-        if (p.brightness != 0f || p.contrast != 1f) {
-            cur = transform(cur, contrastMatrix(p.contrast, p.brightness))
+        var current = input
+        var ownsCurrent = false
+
+        fun replace(next: Bitmap) {
+            if (ownsCurrent && current !== next && !current.isRecycled) current.recycle()
+            current = next
+            ownsCurrent = current !== input
         }
-        return when (p.filter) {
-            PageFilter.ORIGINAL -> cur
-            PageFilter.ENHANCE -> sharpen(stretch(cur), 0.6f)
-            PageFilter.DOCUMENT -> adaptiveThreshold(stretch(cur))
+
+        if (p.brightness != 0f || p.contrast != 1f) {
+            replace(transform(current, contrastMatrix(p.contrast, p.brightness)))
+        }
+
+        when (p.filter) {
+            PageFilter.ORIGINAL -> Unit
+            PageFilter.ENHANCE -> {
+                replace(stretch(current))
+                replace(sharpen(current, 0.6f))
+            }
+            PageFilter.DOCUMENT -> {
+                replace(stretch(current))
+                replace(adaptiveThreshold(current))
+            }
             PageFilter.GRAYSCALE -> {
-                val s = stretch(cur)
-                transform(s, ColorMatrix().apply { setSaturation(0f) })
+                replace(stretch(current))
+                replace(transform(current, ColorMatrix().apply { setSaturation(0f) }))
             }
             PageFilter.VIVID -> {
-                val s = stretch(cur)
-                transform(s, ColorMatrix().apply { setSaturation(1.35f) })
+                replace(stretch(current))
+                replace(transform(current, ColorMatrix().apply { setSaturation(1.35f) }))
             }
-            PageFilter.AUTO -> sharpen(stretch(cur), 0.45f)
-            PageFilter.LIGHTEN -> stretch(transform(cur, contrastMatrix(1.04f, 22f)))
-            PageFilter.DARKEN -> transform(cur, contrastMatrix(1.08f, -18f))
-            PageFilter.COLOR -> transform(stretch(cur), ColorMatrix().apply { setSaturation(1.15f) })
+            PageFilter.AUTO -> {
+                replace(stretch(current))
+                replace(sharpen(current, 0.45f))
+            }
+            PageFilter.LIGHTEN -> {
+                replace(transform(current, contrastMatrix(1.04f, 22f)))
+                replace(stretch(current))
+            }
+            PageFilter.DARKEN -> replace(transform(current, contrastMatrix(1.08f, -18f)))
+            PageFilter.COLOR -> {
+                replace(stretch(current))
+                replace(transform(current, ColorMatrix().apply { setSaturation(1.15f) }))
+            }
         }
+        return current
     }
 
     private fun contrastMatrix(contrast: Float, brightness: Float): ColorMatrix {
@@ -473,6 +514,6 @@ class ImageProcessor(private val pdf: PdfEngine) {
 
     companion object {
         private const val MAX_EXPORT_DIM = 2480
-        private const val MAX_THRESHOLD_PIXELS = 8_000_000L
+        private const val MAX_THRESHOLD_PIXELS = 4_000_000L
     }
 }
