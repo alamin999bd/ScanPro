@@ -471,7 +471,7 @@ private fun ToolPanel(
                         Tool.MERGE -> if (selected.size >= 2) "Merge ${selected.size} PDFs" else "Select at least 2 PDFs"
                         Tool.EXTRACT -> "Extract pages"
                         Tool.TO_IMAGES -> "Export as images"
-                        Tool.COMPRESS -> "Compress"
+                        Tool.COMPRESS -> "Optimize PDF"
                         Tool.LOCK -> "Lock PDF"
                         Tool.UNLOCK -> "Remove password"
                         Tool.WATERMARK -> "Add watermark"
