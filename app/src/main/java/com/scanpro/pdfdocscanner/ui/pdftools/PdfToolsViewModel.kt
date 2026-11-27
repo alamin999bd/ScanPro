@@ -291,43 +291,35 @@ class PdfToolsViewModel(
     /** [level]: 0 = smaller, 1 = balanced, 2 = better quality. The original is never changed. */
     fun compress(doc: DocumentEntity, level: Int, name: String) {
         if (_busy.value != null) return
-        val (quality, width) = when (level) {
-            0 -> 50 to 1000
-            2 -> 85 to 1654
-            else -> 70 to 1240
-        }
         viewModelScope.launch {
-            _busy.value = "Compressing…"
+            _busy.value = "Optimizing PDF while preserving text…"
             val out = files.newDocFile("pdf")
             try {
                 val source = repo.fileOf(doc)
                 val before = source.length()
-                val pages = pdf.compress(source, out, quality, width) { done, total ->
-                    _busy.value = "Compressing page $done of $total…"
-                }
+                val pages = pdf.optimizePreservingText(source, out)
                 val after = out.length()
                 if (after >= before) {
                     out.delete()
                     _message.value = ToolMessage(
-                        "Nothing was saved: the compressed copy (${formatFileSize(after)}) would not be smaller " +
-                            "than the original (${formatFileSize(before)}). Try \"Smaller\".",
+                        "No smaller text-preserving copy could be created. The original PDF is unchanged.",
                         false,
                     )
                 } else {
-                    val finalName = name.ifBlank { "${doc.name} (compressed)" }
+                    val finalName = name.ifBlank { "${doc.name} (optimized)" }
                     repo.addDocument(finalName, out, "pdf", pages)
                     _message.value = ToolMessage(
                         "Saved \"${FileStore.sanitizeName(finalName)}\": ${formatFileSize(before)} → ${formatFileSize(after)}. " +
-                            "The original is unchanged.",
+                            "Searchable text and the original file are preserved.",
                         false,
                     )
                 }
             } catch (e: Exception) {
                 out.delete()
-                _message.value = ToolMessage(describe(e, "The PDF could not be compressed."), true)
+                _message.value = ToolMessage(describe(e, "The PDF could not be safely optimized."), true)
             } catch (e: OutOfMemoryError) {
                 out.delete()
-                _message.value = ToolMessage("This PDF is too large to compress on this phone.", true)
+                _message.value = ToolMessage("This PDF is too large to optimize on this phone.", true)
             } finally {
                 _busy.value = null
             }
