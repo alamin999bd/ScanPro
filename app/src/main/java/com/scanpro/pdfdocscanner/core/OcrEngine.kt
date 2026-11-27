@@ -145,6 +145,6 @@ class OcrEngine(private val context: Context, private val pdf: PdfEngine) {
         const val LANGUAGES = "ben+eng"
         const val PAGE_WIDTH_PX = 1800
         const val MAX_PAGE_HEIGHT_PX = 3600
-        const val IMAGE_MAX_DIM = 2400
+        const val IMAGE_MAX_DIM = 2480
     }
 }
