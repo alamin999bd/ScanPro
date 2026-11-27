@@ -180,17 +180,18 @@ class ScanViewModel(
                                 recognizedText.append('\n')
                             }
                             if (ocrPages.size == sourcePages.size && ocrPages.any { it.words.isNotEmpty() }) {
-                                searchable = files.newDocFile("pdf")
+                                val candidate = files.newDocFile("pdf")
+                                searchable = candidate
                                 pdf.imagesToSearchablePdf(
-                                    uris, ocrPages, searchable, s.pageSize, s.imageQuality
+                                    uris, ocrPages, candidate, s.pageSize, s.imageQuality
                                 )
-                                require(searchable.exists() && searchable.length() > 0L) {
+                                require(candidate.exists() && candidate.length() > 0L) {
                                     "Searchable PDF generation produced an empty file."
                                 }
-                                require(pdf.pageCount(searchable) == pageCount) {
+                                require(pdf.pageCount(candidate) == pageCount) {
                                     "Searchable PDF page count changed during export."
                                 }
-                                files.replaceDocumentAtomically(searchable, out)
+                                files.replaceDocumentAtomically(candidate, out)
                                 searchable = null
                                 repo.refreshDocumentSize(id, out)
                             }
