@@ -197,6 +197,32 @@ class PdfToolsViewModel(
         }
     }
 
+    fun addBookmark(doc: DocumentEntity, title: String, pageText: String, name: String) {
+        if (_busy.value != null) return
+        val page = pageText.toIntOrNull()
+        if (doc.pageCount <= 0 || page == null || page !in 1..doc.pageCount) {
+            _message.value = ToolMessage("Enter a page between 1 and ${doc.pageCount}.", true)
+            return
+        }
+        if (title.isBlank()) {
+            _message.value = ToolMessage("Enter a bookmark title.", true)
+            return
+        }
+        viewModelScope.launch {
+            _busy.value = "Adding PDF bookmark…"
+            val out = files.newDocFile("pdf")
+            try {
+                val count = pdf.addBookmark(repo.fileOf(doc), out, title, page)
+                val finalName = name.ifBlank { "${doc.name} (bookmarked)" }
+                repo.addDocument(finalName, out, "pdf", count)
+                _message.value = ToolMessage("Added bookmark “${title.trim()}” for page $page in a new PDF copy. Original unchanged.", false)
+            } catch (e: Exception) {
+                out.delete()
+                _message.value = ToolMessage(e.message ?: "The bookmark could not be added.", true)
+            } finally { _busy.value = null }
+        }
+    }
+
     fun toImages(doc: DocumentEntity) {
         if (_busy.value != null) return
         viewModelScope.launch {
