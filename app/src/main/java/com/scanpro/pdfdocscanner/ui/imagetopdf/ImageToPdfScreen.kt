@@ -57,6 +57,7 @@ import com.scanpro.pdfdocscanner.ui.components.ProgressDialog
 import com.scanpro.pdfdocscanner.ui.components.ScanProTopBar
 import com.scanpro.pdfdocscanner.ui.components.containerViewModel
 import com.scanpro.pdfdocscanner.ui.editor.PageEditorScreen
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -161,6 +162,7 @@ class ImageToPdfViewModel(
                 val pages = pdf.imagesToPdf(current.images.map { Uri.fromFile(it) }, out, s.pageSize, s.imageQuality) { done, total ->
                     _ui.update { it.copy(progress = done to total) }
                 }
+                require(out.isFile && out.length() > 0L) { "PDF export produced an empty file." }
                 val name = current.name.ifBlank { FileStore.defaultScanName("Images") }
                 val id = repo.addDocument(name, out, "pdf", pages)
                 current.images.forEach { it.delete() }
@@ -169,6 +171,9 @@ class ImageToPdfViewModel(
                     createdName = FileStore.sanitizeName(name),
                     createdPages = pages,
                 )
+            } catch (cancelled: CancellationException) {
+                out.delete()
+                throw cancelled
             } catch (e: Exception) {
                 out.delete()
                 _ui.update { it.copy(progress = null, error = e.message ?: "Could not create the PDF") }
