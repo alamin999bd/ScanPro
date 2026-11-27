@@ -36,3 +36,6 @@
 
 ## Source ZIP ও reproducible build
 Final workflow-এ `Document-Scanner-Source.zip` tracked source tree-এর exact checked-out commit থেকে তৈরি হয় এবং `unzip -t` দিয়ে integrity যাচাই হয়। OCR-এর `ben.traineddata`, `eng.traineddata` এবং Noto Sans font assets CI workflow build-এর সময় download করে app assets-এ বসায়; এগুলো generated build inputs, Git source archive-এ tracked binary হিসেবে রাখা হয় না। Source ZIP-এ workflow ও build instructions থাকবে, যাতে একই provisioning/build process পুনরায় চালানো যায়।
+
+
+Final packaging CI trigger: see the latest successful GitHub Actions run recorded in `DOCUMENT_SCANNER_STATUS_BN.md`.
