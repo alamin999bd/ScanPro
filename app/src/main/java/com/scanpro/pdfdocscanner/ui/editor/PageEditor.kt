@@ -66,6 +66,7 @@ import com.scanpro.pdfdocscanner.core.PageFilter
 import com.scanpro.pdfdocscanner.core.PageQuadGeometry
 import com.scanpro.pdfdocscanner.ui.components.ProgressDialog
 import com.scanpro.pdfdocscanner.ui.components.ScanProTopBar
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -170,18 +171,29 @@ fun PageEditorScreen(
                             saving = true
                             error = null
                             scope.launch {
-                                val out = container.fileStore.newTempFile("jpg")
-                                val ok = processor.export(
-                                    input = file,
-                                    output = out,
-                                    params = EditParams(rotation, crop, filter, brightness, contrast, quad),
-                                )
-                                saving = false
-                                if (ok) {
-                                    onApplied(out)
-                                } else {
-                                    out.delete()
-                                    error = "Could not apply the changes. The image may be too large for this device."
+                                var out: File? = null
+                                try {
+                                    val target = container.fileStore.newTempFile("jpg")
+                                    out = target
+                                    val ok = processor.export(
+                                        input = file,
+                                        output = target,
+                                        params = EditParams(rotation, crop, filter, brightness, contrast, quad),
+                                    )
+                                    if (ok) {
+                                        onApplied(target)
+                                    } else {
+                                        target.delete()
+                                        error = "Could not apply the changes. The image may be too large for this device."
+                                    }
+                                } catch (cancelled: CancellationException) {
+                                    out?.delete()
+                                    throw cancelled
+                                } catch (failure: Exception) {
+                                    out?.delete()
+                                    error = failure.message ?: "Could not apply the changes. Please try again."
+                                } finally {
+                                    saving = false
                                 }
                             }
                         },
@@ -265,18 +277,23 @@ fun PageEditorScreen(
                                 detecting = true
                                 error = null
                                 scope.launch {
-                                    val rotated = processor.preview(src, EditParams(rotation = rotation, quad = quad))
-                                    val box = try {
-                                        processor.detectDocument(rotated)
+                                    var rotated: Bitmap? = null
+                                    try {
+                                        rotated = processor.preview(src, EditParams(rotation = rotation, quad = quad))
+                                        val box = processor.detectDocument(rotated)
+                                        if (box != null) {
+                                            aspect = null
+                                            crop = box
+                                        } else {
+                                            error = "Could not find the page edges. Drag the corners by hand."
+                                        }
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (failure: Exception) {
+                                        error = failure.message ?: "Automatic page detection failed. Try adjusting the corners manually."
                                     } finally {
-                                        if (rotated !== src && !rotated.isRecycled) rotated.recycle()
-                                    }
-                                    detecting = false
-                                    if (box != null) {
-                                        aspect = null
-                                        crop = box
-                                    } else {
-                                        error = "Could not find the page edges. Drag the corners by hand."
+                                        rotated?.let { if (it !== src && !it.isRecycled) it.recycle() }
+                                        detecting = false
                                     }
                                 }
                             }, enabled = source != null && !detecting) { Text("Auto") }
@@ -298,15 +315,22 @@ fun PageEditorScreen(
                                 detecting = true
                                 error = null
                                 scope.launch {
-                                    val found = processor.detectQuad(src)
-                                    detecting = false
-                                    if (found != null) {
-                                        quad = found
-                                        aspect = null
-                                        crop = NRect()
-                                    } else {
-                                        error = "Could not find the four page corners. " +
-                                            "Try a photo where the page is on a plain, contrasting surface."
+                                    try {
+                                        val found = processor.detectQuad(src)
+                                        if (found != null) {
+                                            quad = found
+                                            aspect = null
+                                            crop = NRect()
+                                        } else {
+                                            error = "Could not find the four page corners. " +
+                                                "Try a photo where the page is on a plain, contrasting surface."
+                                        }
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (failure: Exception) {
+                                        error = failure.message ?: "Perspective correction failed. Try another photo or adjust the corners manually."
+                                    } finally {
+                                        detecting = false
                                     }
                                 }
                             },
