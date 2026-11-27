@@ -102,7 +102,7 @@ fun ScanScreen(
 ) {
     val context = LocalContext.current
     val vm = containerViewModel(container, key = if (isIdMode) "scan_id" else "scan_doc") {
-        ScanViewModel(it.documents, it.fileStore, it.pdfEngine, it.settings, isIdMode)
+        ScanViewModel(it.documents, it.fileStore, it.pdfEngine, it.ocrEngine, it.settings, isIdMode)
     }
     val ui by vm.ui.collectAsStateWithLifecycle()
 
