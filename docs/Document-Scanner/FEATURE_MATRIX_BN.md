@@ -27,3 +27,12 @@
 - Build #55 সফল; commit d0825def927e2b874dc92b4364c9284fcb28a98a.
 - PDF Annotation/Highlight coordinate mapping CropBox origin-এ সংশোধিত; invalid/non-finite/out-of-page bounds validate হয়।
 - CI success ফিচারের বাস্তব viewer compatibility বা physical-device QA-র বিকল্প নয়।
+
+
+## 2026-11-27 — Serial 6/7 verification update
+- PDF bookmark navigation: Viewer displays bookmark chips and navigates to selected page; recursive outline traversal is implemented. CI Build #141 passed.
+- In-viewer selectable-text search: search results show matching page chips and navigate to those pages; Build #143 passed. Image-only pages without OCR text layer are not searchable through this PDF text search.
+- In-app note/highlight overlays: supported PDF text-note annotations and rectangular highlight bounds are read from PDFBox metadata and drawn over rendered pages; tapping a note opens its text. Geometry handles CropBox and right-angle page rotation. Unit tests and Build #151 passed.
+- Viewer header layout was adjusted to measure its actual height, preventing the search/bookmark header from relying on fixed padding. PDF page rendering now caps requested width at 1600 px, uses normalized cache keys, rechecks cache under render lock, and recycles a bitmap if rendering throws.
+- Latest CI Build #154, run 45981830547, commit 181ab3df369da6ad3b2b5a84d767df15f1ce6297: Unit Tests, Debug/Release APK builds, APK output verification and artifact upload all passed. Artifact ID 15190061888; debug APK 45 MB, release APK 37 MB.
+- These are CI/code-level results, not proof of real-device performance or external PDF viewer compatibility. Highlight overlay currently uses the annotation rectangle bounds, not each individual text quad; multiline highlights may visually cover intervening spaces. The markup UI remains coordinate-based rather than text-selection based.
