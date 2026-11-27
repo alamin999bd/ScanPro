@@ -476,8 +476,10 @@ class PdfEngine(private val context: Context) {
     // ---------- Compress / Lock / Unlock / Watermark ----------
 
     /**
-     * Shrinks a PDF by re-drawing every page as a JPEG [maxWidthPx] wide.
-     * Trade-off: text becomes part of the picture (it can no longer be selected or searched).
+     * Rewrites a PDF without rasterizing its pages, preserving the existing searchable text.
+     * This is a safe text-preserving rewrite, not lossy image recompression: the output may be
+     * the same size or larger. The caller must compare file sizes and keep the original unless
+     * the rewritten copy is strictly smaller. Page count and extracted text are verified below.
      */
     suspend fun optimizePreservingText(input: File, out: File): Int = withContext(Dispatchers.IO) {
         fun extractText(file: File): Pair<Int, String> {
