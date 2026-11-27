@@ -54,7 +54,6 @@ class OcrPdfGeometryTest {
         assertEquals(0f, result.x, 0.01f)
         assertTrue(result.fontSize > 0f)
     }
-}
 
     @Test
     fun rejectsZeroAreaAndReversedWordBounds() {
