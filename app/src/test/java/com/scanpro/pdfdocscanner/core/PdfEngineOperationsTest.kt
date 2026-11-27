@@ -5,7 +5,7 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
-import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
+import com.tom_roush.pdfbox.pdmodel.font.PDType0Font
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -109,9 +109,12 @@ class PdfEngineOperationsTest {
             labels.forEach { label ->
                 val page = PDPage()
                 document.addPage(page)
+                val font = context.assets.open("fonts/NotoSans-Regular.ttf").use { fontStream ->
+                    PDType0Font.load(document, fontStream)
+                }
                 PDPageContentStream(document, page).use { stream ->
                     stream.beginText()
-                    stream.setFont(PDType1Font.HELVETICA, 16f)
+                    stream.setFont(font, 16f)
                     stream.newLineAtOffset(72f, 720f)
                     stream.showText(label)
                     stream.endText()
