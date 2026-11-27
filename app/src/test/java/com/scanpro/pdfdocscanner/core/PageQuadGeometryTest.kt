@@ -36,7 +36,7 @@ class PageQuadGeometryTest {
         assertNotNull(size)
         assertTrue(requireNotNull(size).first <= 2480)
         assertTrue(size.second <= 2480)
-        assertTrue(size.first > size.second)
+        assertTrue(size.first < size.second)
     }
 
     @Test
