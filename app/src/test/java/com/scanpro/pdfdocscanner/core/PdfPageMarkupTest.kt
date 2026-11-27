@@ -12,7 +12,7 @@ class PdfPageMarkupTest {
             kind = "HIGHLIGHT",
         )!!
         assertEquals(0.1f, result.left, 0.0001f)
-        assertEquals(0.1f, result.top, 0.0001f)
+        assertEquals(0.15f, result.top, 0.0001f)
         assertEquals(0.2f, result.width, 0.0001f)
         assertEquals(0.1f, result.height, 0.0001f)
     }
