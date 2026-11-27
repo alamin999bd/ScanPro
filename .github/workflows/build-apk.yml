@@ -56,6 +56,19 @@ jobs:
           cp app/src/main/assets/fonts/NotoSansBengali.ttf app/src/test/resources/NotoSansBengali.ttf
           cp app/src/main/assets/fonts/NotoSans-Regular.ttf app/src/test/resources/NotoSans-Regular.ttf
 
+      - name: Prepare PDFBox Android assets for Robolectric tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          PDFBOX_VERSION="2.0.27.0"
+          PDFBOX_AAR="$RUNNER_TEMP/pdfbox-android-$PDFBOX_VERSION.aar"
+          curl -fsSL --retry 3 -o "$PDFBOX_AAR" "https://repo.maven.apache.org/maven2/com/tom-roush/pdfbox-android/$PDFBOX_VERSION/pdfbox-android-$PDFBOX_VERSION.aar"
+          mkdir -p "$RUNNER_TEMP/pdfbox-aar" app/src/test/assets
+          unzip -q "$PDFBOX_AAR" 'assets/*' -d "$RUNNER_TEMP/pdfbox-aar"
+          test -s "$RUNNER_TEMP/pdfbox-aar/assets/com/tom_roush/fontbox/resources/cmap/Identity-H"
+          cp -R "$RUNNER_TEMP/pdfbox-aar/assets/." app/src/test/assets/
+          test -s app/src/test/assets/com/tom_roush/fontbox/resources/cmap/Identity-H
+          echo "PDFBox Android test assets prepared, including Identity-H CMap."
+
       - name: Verify Bengali and Latin font glyph coverage
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
