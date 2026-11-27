@@ -232,7 +232,7 @@ private fun CaptureContent(
     val shutterSource = remember { MutableInteractionSource() }
 
     val maxPages = if (isIdMode) 2 else Int.MAX_VALUE
-    val canCapture = pages.size < maxPages && !capturing
+    val canCapture = pages.size < maxPages && !capturing && camera != null
     val instruction = when {
         !isIdMode -> if (pages.isEmpty()) "Place the page flat and capture" else "Capture the next page or tap Save PDF"
         pages.isEmpty() -> "Fit the FRONT of the ID inside the frame"
@@ -249,9 +249,9 @@ private fun CaptureContent(
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
             if (disposed) return@addListener
-            val provider = future.get()
-            val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
             camera = runCatching {
+                val provider = future.get()
+                val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
                 provider.unbindAll()
                 provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
             }.getOrNull()
@@ -391,21 +391,26 @@ private fun CaptureContent(
                         capturing = true
                         val file = newFile()
                         val options = ImageCapture.OutputFileOptions.Builder(file).build()
-                        imageCapture.takePicture(
-                            options,
-                            ContextCompat.getMainExecutor(context),
-                            object : ImageCapture.OnImageSavedCallback {
-                                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                    capturing = false
-                                    onCaptured(file)
-                                }
+                        try {
+                            imageCapture.takePicture(
+                                options,
+                                ContextCompat.getMainExecutor(context),
+                                object : ImageCapture.OnImageSavedCallback {
+                                    override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                        capturing = false
+                                        onCaptured(file)
+                                    }
 
-                                override fun onError(exception: ImageCaptureException) {
-                                    capturing = false
-                                    onFailed(file, "Capture failed. Please try again.")
-                                }
-                            },
-                        )
+                                    override fun onError(exception: ImageCaptureException) {
+                                        capturing = false
+                                        onFailed(file, "Capture failed. Please try again.")
+                                    }
+                                },
+                            )
+                        } catch (exception: Exception) {
+                            capturing = false
+                            onFailed(file, "Camera is not ready. Please try again.")
+                        }
                     },
             )
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
