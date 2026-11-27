@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -51,7 +52,7 @@ class DocumentsViewModel(
 
     /** Ids of documents whose recognized (OCR) text contains the search words. */
     private val textMatches =
-        query.flatMapLatest { q ->
+        query.debounce(250).flatMapLatest { q ->
             val needle = q.trim()
             if (needle.isEmpty()) flowOf(emptyList<Long>()) else repo.observeTextMatches(needle)
         }
