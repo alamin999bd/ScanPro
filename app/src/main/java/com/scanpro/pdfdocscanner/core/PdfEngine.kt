@@ -281,7 +281,7 @@ class PdfEngine(private val context: Context) {
         try {
             val total = src.numberOfPages
             require(pagesToDelete.all { it in 1..total }) { "A selected page is out of range" }
-            require(pagesToDelete.size < total) { "A PDF must keep at least one page" }
+            require(pagesToDelete.distinct().size < total) { "A PDF must keep at least one page" }
             pagesToDelete.distinct().sortedDescending().forEach { src.removePage(it - 1) }
             out.outputStream().use { src.save(it) }
             src.numberOfPages
