@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,8 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.scanpro.pdfdocscanner.ai.GeminiApiClient
 import com.scanpro.pdfdocscanner.security.GeminiCredentialVault
@@ -30,19 +27,17 @@ import kotlinx.coroutines.withContext
 fun GeminiDocumentAssistant(context: Context, onExtractText: suspend () -> String, onDismiss: () -> Unit) {
     val vault = remember(context) { GeminiCredentialVault(context) }
     val scope = rememberCoroutineScope()
-    var pin by remember { mutableStateOf("") }
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     fun ask(task: String) {
         if (busy) return
-        if (pin.length != 6 || pin.any { !it.isDigit() }) { error = "Enter your six-digit PIN."; return }
         busy = true; error = null; answer = ""
         scope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val key = vault.readApiKey(pin) ?: throw IllegalStateException("No Gemini API key is saved. Add it in Settings.")
+                    val key = vault.readApiKeyForAi() ?: throw IllegalStateException("No Gemini API key is saved. Add it in Settings.")
                     val text = onExtractText()
                     val prompt = """
                         Use only the supplied document for document-specific facts. If information is missing, say so.
@@ -67,9 +62,6 @@ fun GeminiDocumentAssistant(context: Context, onExtractText: suspend () -> Strin
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Chosen PDF text will be sent to Google Gemini over the internet. Do not send private or sensitive documents.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(pin, { pin = it.filter(Char::isDigit).take(6) }, label = { Text("6-digit PIN") },
-                    singleLine = true, visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(question, { question = it.take(500) }, label = { Text("Ask a question (optional)") }, modifier = Modifier.fillMaxWidth())
                 Text("Quick actions", style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
