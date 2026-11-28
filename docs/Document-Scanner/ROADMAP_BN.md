@@ -59,3 +59,23 @@
 - Source audit-এ PDF engine operations-এর জন্য dedicated end-to-end/sample-PDF test suite পাওয়া যায়নি। বর্তমান JVM tests মূলত parsing, geometry, OCR text-layer helper ও markup logic পরীক্ষা করে।
 - নতুন PDF_SAMPLE_QA_BN.md-এ test fixtures, operation-by-operation expected results, negative cases ও evidence log format নির্ধারণ করা হয়েছে।
 - এই নথি test plan; কোনো sample PDF operation এখনো functional pass হিসেবে গণ্য নয়। Test execution ও Samsung Galaxy M12 QA pending।
+
+ 
+## 2026-11-28 — বর্তমান অগ্রগতি ও পরবর্তী কাজ
+
+- Build #265 (run `46123976778`), branch HEAD `75f383760f5a402d12f293d96ccf816c39437e50`: SUCCESS।
+- Unit Tests, OfficeConverter Android instrumentation workflow, Debug/Release APK build, APK signature verification এবং tracked-source ZIP packaging/integrity check সফল।
+- Artifact ID `15254664206`; APK ও source ZIP একই successful run থেকে এসেছে।
+- Signing workflow-এ `use_persistent_signing` manual input এবং চারটি GitHub Actions secret-এর support যোগ হয়েছে: `SCANPRO_KEYSTORE_BASE64`, `SCANPRO_KEYSTORE_PASSWORD`, `SCANPRO_KEY_ALIAS`, `SCANPRO_KEY_PASSWORD`।
+- Build #265-এ persistent key secrets configure করা ছিল না; signing step skipped এবং Release APK Debug certificate দিয়ে সই হয়েছে। তাই এটি validation build, final updateable APK নয়।
+- Physical Samsung Galaxy M12 QA এখনো বাকি।
+
+### কাজের ক্রম
+1. Repository owner নিরাপদে keystore তৈরি/backup করে চারটি Actions secret যোগ করবেন; secret/password chat বা source-এ দেওয়া যাবে না। প্রয়োজনে বিশ্বস্ত প্রাপ্তবয়স্কের সহায়তা নিন।
+2. Actions থেকে branch `document-scanner-premium` নির্বাচন করে `use_persistent_signing=true) দিয়ে workflow চালাতে হবে।
+3. নতুন run-এর সব test/build/signing/source archive stage সফল এবং release certificate debug certificate থেকে আলাদা—এটি যাচাই করতে হবে।
+4. PDF_SAMPLE_QA_BN.md অনুযায়ী operation-by-operation sample PDF QA সম্পন্ন করতে হবে; শুধু menu/method থাকা pass নয়।
+5. Final signed APK পাওয়ার পর Samsung Galaxy M12 Android 13-এ বাস্তব পরীক্ষা।
+6. কোনো সমস্যা পেলে শুধু সংশ্লিষ্ট অংশ fix করে নতুন CI চালাতে হবে; সফল latest HEAD ছাড়া final APK দেওয়া যাবে না।
+
+**সতর্কতা:** keystore হারালে একই signing identity দিয়ে ভবিষ্যৎ update দেওয়া কঠিন/অসম্ভব হতে পারে। Keystore ও backup নিরাপদে রাখতে হবে। বর্তমান validation APK-কে final APK হিসেবে ইনস্টল বা বিতরণের নির্দেশ দেওয়া হচ্ছে না।

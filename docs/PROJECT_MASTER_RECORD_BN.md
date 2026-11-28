@@ -175,3 +175,15 @@
 - Serial 10 workflow change: package tracked project source with `git archive`, validate ZIP integrity and upload `Document-Scanner-Source.zip` alongside Debug/Release APKs and signing reports. CI-provisioned OCR traineddata and font binaries are downloaded during workflow rather than committed; source ZIP includes the workflow that recreates them.
 - Trigger a new build after this packaging/docs commit. Verify latest branch HEAD equals the successful build SHA and inspect the artifact file listing before final delivery. Never send an older artifact.
 - No physical Samsung Galaxy M12 QA has been performed in this session.
+
+ 
+## 2026-11-28 — Build #265 ও Release Gate
+
+- Commit: `75f383760f5a402d12f293d96ccf816c39437e50`
+- Workflow run: `46123976778` — SUCCESS; branch `document-scanner-premium`-এর HEAD-এর সঙ্গে মিলেছে।
+- Passed: JVM Unit Tests, OfficeConverter Android instrumentation workflow, Debug APK build, Release APK build, Debug/Release `apksigner verify`, tracked-source ZIP packaging এবং ZIP integrity test।
+- Artifact: `Document-Scanner-APK`, ID `15254664206`; এতে Debug APK, Release APK, signing reports এবং `Document-Scanner-Source.zip` রয়েছে।
+- Release certificate report-এ CN=Android Debug; Debug ও Release SHA-256 certificate fingerprint একই। অর্থাৎ persistent keystore configure হয়নি এবং এই Release APK final updateable release নয়।
+- Workflow-তে manual `use_persistent_signing` gate ও প্রয়োজনীয় চারটি Actions secret-এর support যোগ করা হয়েছে। Secret values কখনো repository-তে বা chat-এ রাখা যাবে না।
+- Project docs ও README Build #265/বর্তমান signing limitation অনুযায়ী refresh করা হয়েছে।
+- Next: secure persistent keystore provisioning; এরপর নতুন signed build; sample PDF functional QA; Samsung Galaxy M12 Android 13 physical QA। CI success-কে device QA হিসেবে গণ্য করা যাবে না।

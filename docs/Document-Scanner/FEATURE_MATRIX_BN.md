@@ -69,3 +69,25 @@
 - PDF Tools now handles memory exhaustion with user-facing errors and partial-output cleanup; Build #199 passed.
 - Optimize PDF is a text-preserving PDF rewrite, not raster recompression. It verifies page count and extracted text, and only keeps a smaller output; it may not reduce image-heavy PDFs.
 - Remaining: sample-file tests for each operation, rotated/CropBox/large-file cases, and real Samsung Galaxy M12 QA. CI success is not functional device QA.
+
+ 
+## 2026-11-28 — সর্বশেষ যাচাইকৃত অবস্থা (Build #265)
+
+এই অংশটি উপরের পুরোনো CI milestone/“pending” নোটের পরবর্তী অবস্থা হিসেবে ধরতে হবে।
+
+- Branch HEAD: `75f383760f5a402d12f293d96ccf816c39437e50`; GitHub Actions Build #265 (run `46123976778`) SUCCESS।
+- JVM Unit Tests: সফল।
+- OfficeConverter Android instrumentation: সফল; workflow test command সফলভাবে শেষ হয়েছে। পৃথক test case-গুলোর রিপোর্ট instrumentation diagnostics artifact-এ আছে।
+- Debug APK এবং Release APK build: সফল।
+- উভয় APK-এর `apksigner verify`: সফল।
+- Full tracked-source ZIP: তৈরি, `unzip -t` integrity check সফল, APK artifact-এর সঙ্গে একই run/commit-এ upload হয়েছে।
+- APK artifact ID: `15254664206`; artifact-এ Debug APK, Release APK, দুই signing report ও `Document-Scanner-Source.zip` আছে।
+- **Release signing এখনো temporary Android Debug certificate**: Build #265-এ persistent keystore step skipped ছিল। এটি final updateable release নয়।
+- Samsung Galaxy M12/Android 13-এ physical test এখনো হয়নি।
+- Feature Matrix-এর “Source audit-এ আছে” মানে implementation code-এ পাওয়া গেছে; sample file/real device test পাস বোঝায় না। PDF operations, OCR quality, camera capture, visual filters এবং external PDF viewer compatibility-এর sample QA এখনো আলাদা কাজ।
+
+### পরবর্তী QA অগ্রাধিকার
+1. Persistent user-owned release keystore secure GitHub Actions secrets-এ configure করে manual workflow-তে `use_persistent_signing=true) দিয়ে নতুন build।
+2. PDF_SAMPLE_QA_BN.md অনুযায়ী sample PDF দিয়ে merge/extract/delete/reorder/rotate/optimize/lock/unlock/watermark/sign/annotation পরীক্ষা।
+3. Bangla + English OCR এবং searchable PDF-কে PDFTextStripper ও বাহ্যিক viewer-এ যাচাই।
+4. Samsung Galaxy M12-এ camera, gallery, large scans, OCR, PDF, Office import, storage/share এবং low-memory behaviour পরীক্ষা।
