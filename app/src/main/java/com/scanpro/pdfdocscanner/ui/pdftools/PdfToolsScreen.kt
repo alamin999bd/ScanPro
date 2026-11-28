@@ -1,6 +1,7 @@
 package com.scanpro.pdfdocscanner.ui.pdftools
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BrandingWatermark
@@ -162,37 +166,54 @@ fun PdfToolsScreen(container: AppContainer, onBack: () -> Unit) {
 
 @Composable
 private fun ToolMenu(modifier: Modifier, onPick: (Tool) -> Unit) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Tool.entries.forEach { tool ->
+        items(Tool.entries, key = { it.name }) { tool ->
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
+                    .height(158.dp)
+                    .clip(MaterialTheme.shapes.large)
                     .clickable { onPick(tool) },
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.large,
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 1.dp,
+                tonalElevation = 3.dp,
+                shadowElevation = 1.dp,
             ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .padding(0.dp),
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(tool.accent.copy(alpha = 0.14f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(tool.icon, contentDescription = null, tint = tool.accent, modifier = Modifier.size(30.dp))
+                        Icon(
+                            tool.icon,
+                            contentDescription = null,
+                            tint = tool.accent,
+                            modifier = Modifier.size(27.dp),
+                        )
                     }
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(tool.title, style = MaterialTheme.typography.titleMedium)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            tool.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 2,
+                        )
                         Text(
                             tool.description,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
                         )
                     }
                 }
