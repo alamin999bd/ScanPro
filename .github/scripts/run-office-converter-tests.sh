@@ -41,4 +41,8 @@ while :; do
 done
 
 echo "Android boot and required system services are ready."
-./gradlew --no-daemon --console=plain connectedDebugAndroidTest
+echo "Emulator ABI: $(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
+# The project normally packages only ARM ABIs for phone releases. Enable
+# x86_64 only for this emulator test invocation so Gradle can install the
+# app APK on the x86_64 GitHub-hosted emulator without bloating phone APKs.
+./gradlew --no-daemon --console=plain -PciEmulator=true connectedDebugAndroidTest
