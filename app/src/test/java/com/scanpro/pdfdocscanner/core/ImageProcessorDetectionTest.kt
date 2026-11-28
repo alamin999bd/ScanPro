@@ -54,19 +54,33 @@ class ImageProcessorDetectionTest {
     fun detectsSkewedPageAndReturnsValidPerspectiveCorners() = runBlocking {
         val bitmap = Bitmap.createBitmap(320, 400, Bitmap.Config.ARGB_8888)
         try {
-            val canvas = Canvas(bitmap)
-            canvas.drawColor(android.graphics.Color.rgb(28, 28, 28))
-            val page = Path().apply {
-                moveTo(66f, 42f)
-                lineTo(278f, 78f)
-                lineTo(246f, 358f)
-                lineTo(38f, 320f)
-                close()
-            }
-            canvas.drawPath(
-                page,
-                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE },
+            // Rasterize the skewed quadrilateral directly so this geometry test does not
+            // depend on Robolectric's Canvas.drawPath implementation.
+            val dark = android.graphics.Color.rgb(28, 28, 28)
+            val white = android.graphics.Color.WHITE
+            val pixels = IntArray(320 * 400) { dark }
+            val vertices = arrayOf(
+                66f to 42f,
+                278f to 78f,
+                246f to 358f,
+                38f to 320f,
             )
+            for (y in 0 until 400) {
+                for (x in 0 until 320) {
+                    var inside = false
+                    var j = vertices.lastIndex
+                    for (i in vertices.indices) {
+                        val (xi, yi) = vertices[i]
+                        val (xj, yj) = vertices[j]
+                        if ((yi > y) != (yj > y) &&
+                            x < (xj - xi) * (y - yi) / (yj - yi) + xi
+                        ) inside = !inside
+                        j = i
+                    }
+                    if (inside) pixels[y * 320 + x] = white
+                }
+            }
+            bitmap.setPixels(pixels, 0, 320, 0, 0, 320, 400)
 
             val processor = ImageProcessor(PdfEngine(context))
             val bounds = processor.detectDocument(bitmap)
