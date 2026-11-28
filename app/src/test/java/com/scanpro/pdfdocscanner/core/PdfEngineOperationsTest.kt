@@ -255,6 +255,35 @@ class PdfEngineOperationsTest {
         assertEquals(listOf("SOURCE-ONLY"), pageTexts(source))
     }
 
+    @Test
+    fun malformedPdfIsRejectedByReadAndMergeWithoutProducingOutput() {
+        val malformed = output("malformed.pdf").apply {
+            writeText("This is not a PDF document")
+        }
+        val valid = createPdf("VALID-PAGE")
+        val merged = output("merge-with-malformed.pdf")
+
+        assertOperationFails {
+            runBlocking { engine.pageCount(malformed) }
+        }
+        assertOperationFails {
+            runBlocking { engine.merge(listOf(valid, malformed), merged) }
+        }
+
+        assertFalse(merged.exists())
+        assertEquals(listOf("VALID-PAGE"), pageTexts(valid))
+    }
+
+    @Test
+    fun duplicateDeleteSelectionRemovesEachPageOnlyOnce() = runBlocking {
+        val source = createPdf("FIRST", "SECOND", "THIRD")
+        val deleted = output("duplicate-delete.pdf")
+
+        assertEquals(2, engine.deletePages(source, listOf(2, 2), deleted))
+        assertEquals(listOf("FIRST", "THIRD"), pageTexts(deleted))
+        assertEquals(listOf("FIRST", "SECOND", "THIRD"), pageTexts(source))
+    }
+
     private fun assertOperationFails(operation: () -> Unit) {
         var failed = false
         try {
