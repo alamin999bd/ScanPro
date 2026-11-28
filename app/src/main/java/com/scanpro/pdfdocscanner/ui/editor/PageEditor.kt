@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.RotateLeft
@@ -226,8 +228,9 @@ fun PageEditorScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(Color(0xFF111111)),
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF17112A))
+                    .border(1.dp, Color(0xFF7650D8), RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 val img = shown
@@ -257,8 +260,9 @@ fun PageEditorScreen(
 
             TabRow(
                 selectedTabIndex = tab,
-                containerColor = MaterialTheme.colorScheme.background,
-                modifier = Modifier.padding(top = 8.dp),
+                containerColor = Color(0xFF21183A),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(18.dp)),
             ) {
                 listOf("Crop & Rotate", "Filters", "Adjust").forEachIndexed { i, label ->
                     Tab(selected = tab == i, onClick = { tab = i }, text = { Text(label) })
@@ -269,7 +273,11 @@ fun PageEditorScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0xFF21183A))
+                    .border(1.dp, Color(0xFF49366F), RoundedCornerShape(22.dp))
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
                     .height(112.dp),
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -373,6 +381,10 @@ fun PageEditorScreen(
                             items(presets) { (label, value) ->
                                 FilterChip(
                                     selected = aspect == value,
+                                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFF7044D6),
+                                        selectedLabelColor = Color.White,
+                                    ),
                                     onClick = {
                                         aspect = value
                                         val (w, h) = rotatedDims()
@@ -390,6 +402,10 @@ fun PageEditorScreen(
                         items(PageFilter.entries.toList()) { f ->
                             FilterChip(
                                 selected = filter == f,
+                                colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFF7044D6),
+                                    selectedLabelColor = Color.White,
+                                ),
                                 onClick = { filter = f },
                                 label = { Text(f.label) },
                             )
@@ -410,7 +426,7 @@ fun PageEditorScreen(
 @Composable
 private fun LabeledSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.size(width = 88.dp, height = 24.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = Color(0xFFD8C9FF), modifier = Modifier.size(width = 88.dp, height = 24.dp))
         Slider(value = value, onValueChange = onChange, valueRange = range, modifier = Modifier.weight(1f))
     }
 }
