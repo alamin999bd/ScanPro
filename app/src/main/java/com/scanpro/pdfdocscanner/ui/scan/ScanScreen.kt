@@ -267,13 +267,30 @@ private fun CaptureContent(
     }
 
     Column(modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column {
+                Text("CAMERA PREVIEW", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onBackground)
+                Text("Tap anywhere to focus", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(
+                if (isIdMode) "ID MODE" else "HD SCAN",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+                modifier = Modifier.clip(CircleShape).background(Color(0xFF6938E8)).padding(horizontal = 12.dp, vertical = 7.dp),
+            )
+        }
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 12.dp)
                 .clip(MaterialTheme.shapes.large)
-                .background(Color.Black),
+                .background(Color.Black)
+                .border(1.dp, Color(0xFF8050F5), MaterialTheme.shapes.large),
         ) {
             AndroidView(
                 factory = { previewView },
@@ -298,8 +315,9 @@ private fun CaptureContent(
                     .align(Alignment.TopCenter)
                     .padding(12.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.55f))
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .background(Color(0xCC21133F))
+                    .border(1.dp, Color(0xFF9369FF), CircleShape)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
             if (camera?.cameraInfo?.hasFlashUnit() == true) {
@@ -363,7 +381,10 @@ private fun CaptureContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(16.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -379,10 +400,10 @@ private fun CaptureContent(
             Box(
                 modifier = Modifier
                     .size(72.dp)
-                    .border(4.dp, ringColor, CircleShape)
-                    .padding(8.dp)
+                    .border(4.dp, if (canCapture) Color(0xFFAC8CFF) else ringColor, CircleShape)
+                    .padding(7.dp)
                     .clip(CircleShape)
-                    .background(ringColor)
+                    .background(if (canCapture) Color(0xFF8050F5) else ringColor)
                     .clickable(
                         interactionSource = shutterSource,
                         indication = null,
