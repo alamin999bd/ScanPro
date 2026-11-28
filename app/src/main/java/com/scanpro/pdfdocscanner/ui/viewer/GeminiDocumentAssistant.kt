@@ -31,7 +31,7 @@ fun GeminiDocumentAssistant(context: Context, onExtractText: suspend () -> Strin
     var answer by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    fun ask(task: String) {
+    fun ask(task: String, allowGeneralKnowledge: Boolean = false) {
         if (busy) return
         busy = true; error = null; answer = ""
         scope.launch {
@@ -39,14 +39,18 @@ fun GeminiDocumentAssistant(context: Context, onExtractText: suspend () -> Strin
                 val result = withContext(Dispatchers.IO) {
                     val key = vault.readApiKeyForAi() ?: throw IllegalStateException("No Gemini API key is saved. Add it in Settings.")
                     val text = onExtractText()
-                    val prompt = """
-                        Use only the supplied document for document-specific facts. If information is missing, say so.
-                        Task: $task
-                        User question: ${question.trim().ifBlank { "None" }}
-                        Reply in clear, simple Bengali unless another language is explicitly requested.
-                        Document text:
-                        $text
-                    """.trimIndent()
+                    val prompt = if (allowGeneralKnowledge) {
+                        com.scanpro.pdfdocscanner.ai.GeminiQuestionPrompt.build(question, text)
+                    } else {
+                        """
+                            Use only the supplied document for document-specific facts. If information is missing, say so.
+                            Task: $task
+                            User question: ${question.trim().ifBlank { "None" }}
+                            Reply in clear, simple Bengali unless another language is explicitly requested.
+                            Document text:
+                            $text
+                        """.trimIndent()
+                    }
                     GeminiApiClient.generate(key, prompt)
                 }
                 answer = result
@@ -72,7 +76,7 @@ fun GeminiDocumentAssistant(context: Context, onExtractText: suspend () -> Strin
                     Button(enabled = !busy, onClick = { ask("Create concise, organized smart notes from this document.") }) { Text("Smart Notes") }
                     Button(enabled = !busy, onClick = { ask("Explain this document in simple terms.") }) { Text("Explain") }
                 }
-                Button(enabled = !busy && question.isNotBlank(), onClick = { ask("Answer the user's question using only the document.") },
+                Button(enabled = !busy && question.isNotBlank(), onClick = { ask("Answer the user's question, preferring the PDF and clearly labeling general knowledge when needed.", allowGeneralKnowledge = true) },
                     modifier = Modifier.fillMaxWidth()) { Text("Ask PDF") }
                 if (busy) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CircularProgressIndicator(); Text("Contacting Gemini…")
