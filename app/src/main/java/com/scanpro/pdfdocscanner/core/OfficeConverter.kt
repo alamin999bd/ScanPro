@@ -227,10 +227,20 @@ class OfficeConverter {
     /** "C7" -> 2, "AA1" -> 26 (zero-based column). */
     private fun columnIndex(ref: String): Int {
         var n = 0
+        var letters = 0
         for (ch in ref) {
-            if (ch in 'A'..'Z') n = n * 26 + (ch - 'A' + 1) else break
+            if (ch !in 'A'..'Z') break
+            letters++
+            val digit = ch - 'A' + 1
+            require(n <= (MAX_COLUMNS - digit) / 26) {
+                "This Excel file contains a cell outside the supported column range."
+            }
+            n = n * 26 + digit
         }
-        return (n - 1).coerceAtLeast(0)
+        require(letters > 0 && n in 1..MAX_COLUMNS) {
+            "This Excel file contains an invalid cell reference."
+        }
+        return n - 1
     }
 
     // ---------- PDF output ----------
@@ -301,5 +311,6 @@ class OfficeConverter {
     companion object {
         private const val MAX_XML_BYTES = 40L * 1024 * 1024
         private const val MAX_CELLS = 60_000
+        private const val MAX_COLUMNS = 16_384
     }
 }
