@@ -16,7 +16,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28])
+@Config(sdk = [35])
 class OfficeConverterTest {
     private lateinit var converter: OfficeConverter
     private lateinit var dir: File
@@ -64,7 +64,7 @@ class OfficeConverterTest {
     fun convertsXlsxSharedStringsAndSparseCellsToPdf() = runBlocking {
         val input = zip(
             "sample.xlsx",
-            "xl/workbook.xml" to """<workbook><sheets><sheet name="Overview" sheetId="1" r:id="rId1"/></sheets></workbook>""",
+            "xl/workbook.xml" to """<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Overview" sheetId="1" r:id="rId1"/></sheets></workbook>""",
             "xl/sharedStrings.xml" to """<sst><si><t>Revenue</t></si><si><t>1200</t></si></sst>""",
             "xl/worksheets/sheet1.xml" to """<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="s"><v>1</v></c></row></sheetData></worksheet>"""
         )
