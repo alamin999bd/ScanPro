@@ -69,6 +69,8 @@ class ImageProcessorDetectionTest {
             )
 
             val processor = ImageProcessor(PdfEngine(context))
+            val bounds = processor.detectDocument(bitmap)
+            assertNotNull("Skewed page blob should be found before corner extraction", bounds)
             val quad = processor.detectQuad(bitmap)
             assertNotNull("A clearly separated skewed page should yield four corners", quad)
             assertTrue(PageQuadGeometry.isValid(quad, minArea = 0.12f, minEdge = 0.1f))
