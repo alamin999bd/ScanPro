@@ -78,8 +78,8 @@
 
 ### QA execution boundary
 - CI Build #201 সফল হলেও উপরের PDF operations sample-file end-to-end হিসেবে চালানো হয়নি।
-- Repository-তে dedicated PDF sample fixture বা PdfEngine integration test পাওয়া যায়নি; বর্তমান JVM test-গুলো geometry, parsing ও text-search helper-এর মতো isolated logic কভার করে।
-- তাই এই পর্যায়ে কোনো operation PASS ঘোষণা করা হচ্ছে না। প্রথমে controlled P1/P2/P4/P6 fixtures তৈরি/সংগ্রহ করে PDF engine-এর positive ও negative paths চালাতে হবে।
+- Repository-তে এখন `PdfEngineOperationsTest.kt`-এ synthetic PDF fixture তৈরি করে PDF engine operation-এর automated JVM regression tests আছে। এগুলো Robolectric/PDFBox পরিবেশে generated PDF-এ merge, extract, delete, reorder, rotate, lock/unlock, watermark, page number, bookmark, optimize, annotation, text search এবং invalid-input path পরীক্ষা করে।
+- এই automated tests sample checklist-এর বিকল্প নয়: external PDF viewer-এ rendering, real scanned/image-heavy PDF, বাংলা glyph appearance, CropBox/rotation এবং বড় ফাইলের device memory আচরণ এখনো আলাদাভাবে যাচাই করতে হবে।
 - Test fixture যোগ করার সময় copyrighted বা ব্যক্তিগত নথি ব্যবহার করা যাবে না; synthetic test content ব্যবহার করতে হবে।
 
 ## বর্তমান অবস্থা
@@ -87,3 +87,10 @@
 - Dedicated PDF engine sample-fixture test suite source audit-এ পাওয়া যায়নি।
 - এই checklist-এর কোনো case execution evidence ছাড়া PASS হিসেবে চিহ্নিত করা যাবে না।
 - Samsung Galaxy M12 Android 13 manual QA এখনো pending।
+
+
+## 2026-11-28 — Automated PDF regression coverage update
+- `PdfEngineOperationsTest.kt` এখন dedicated synthetic PDF fixture তৈরি করে ১৩টি JVM regression test চালায়; Build #265-এ সব ৫৬টি JVM test পাস করেছে।
+- কভারেজে merge/extract/delete/reorder, rotate, password lock/unlock, watermark, page numbers, bookmark, text-preserving optimize, note/highlight annotation, selectable-text search এবং invalid/malformed/duplicate selection cases আছে।
+- Build #266 (run 46125098712, commit b68d898d738d37db172e58e7fd14a73098ade22b) latest documentation HEAD-এ SUCCESS।
+- সীমাবদ্ধতা: synthetic fixture test external viewer rendering, real-world mixed Bangla/English PDFs, scanned/image-heavy files, CropBox/rotation visual placement বা Samsung M12 performance প্রমাণ করে না। P1–P7 manual sample QA এবং physical-device QA এখনো pending।
