@@ -1,5 +1,6 @@
 package com.scanpro.pdfdocscanner.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material.icons.rounded.Badge
 import androidx.compose.material.icons.rounded.Construction
 import androidx.compose.material.icons.rounded.Description
@@ -53,6 +55,9 @@ import com.scanpro.pdfdocscanner.AppContainer
 import com.scanpro.pdfdocscanner.ui.components.DocumentRow
 import com.scanpro.pdfdocscanner.ui.components.containerViewModel
 import com.scanpro.pdfdocscanner.ui.theme.Indigo500
+import com.scanpro.pdfdocscanner.ui.theme.GlassSurface
+import com.scanpro.pdfdocscanner.ui.theme.GlassOutline
+import com.scanpro.pdfdocscanner.ui.theme.AccentPink
 import com.scanpro.pdfdocscanner.ui.theme.Indigo700
 import com.scanpro.pdfdocscanner.ui.theme.Indigo900
 import com.scanpro.pdfdocscanner.ui.theme.TileDocuments
@@ -103,7 +108,7 @@ fun HomeScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Brush.verticalGradient(listOf(Color(0xFF17102F), Color(0xFF100D24), MaterialTheme.colorScheme.background)))
             .statusBarsPadding(),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -136,11 +141,11 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Recent Documents", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("Recent Documents", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
                     Text(
                         if (count == 0) "Your scanned files will appear here" else "$count files in your library",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color(0xFFB8AECF),
                     )
                 }
                 if (recent.isNotEmpty()) TextButton(onClick = onDocuments) { Text("See all") }
@@ -165,7 +170,7 @@ fun HomeScreen(
 private fun HomeHeader(onSearch: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Document Scanner", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("Document Scanner", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
             Text(
                 "Scan, organize and manage PDFs",
                 style = MaterialTheme.typography.bodyMedium,
@@ -175,7 +180,7 @@ private fun HomeHeader(onSearch: () -> Unit) {
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(GlassSurface)
                 .padding(horizontal = 10.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -183,10 +188,10 @@ private fun HomeHeader(onSearch: () -> Unit) {
                 Icons.Rounded.WifiOff,
                 contentDescription = null,
                 modifier = Modifier.size(15.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                tint = Color.White,
             )
             Spacer(Modifier.width(5.dp))
-            Text("Offline", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("Offline", style = MaterialTheme.typography.labelMedium, color = Color.White)
         }
         IconButton(onClick = onSearch) {
             Icon(Icons.Rounded.Search, contentDescription = "Search documents")
@@ -200,15 +205,15 @@ private fun ScanHero(count: Int, onScan: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(Indigo500, Indigo700, Indigo900)))
+            .background(Brush.linearGradient(listOf(Color(0xFF6738C8), Color(0xFF402080), Color(0xFF25204E))))
             .clickable(onClick = onScan)
             .padding(horizontal = 20.dp, vertical = 22.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("READY TO SCAN?", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.78f))
+            Text("SMART DOCUMENT SCANNER", style = MaterialTheme.typography.labelMedium, color = Color(0xFFE1D5FF), fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
-            Text("Scan Document", style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Scan Document", style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(5.dp))
             Text(
                 if (count == 0) "Turn paper into a clear PDF" else "$count documents saved on this device",
@@ -264,9 +269,9 @@ private fun FeatureTile(tile: Tile, modifier: Modifier = Modifier) {
             }
             Spacer(Modifier.width(11.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(tile.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(tile.title, style = MaterialTheme.typography.titleSmall, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(3.dp))
-                Text(tile.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(tile.subtitle, style = MaterialTheme.typography.bodySmall, color = Color(0xFFB8AECF), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -291,14 +296,14 @@ private fun RecentEmptyState(onScan: () -> Unit) {
                 tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(Modifier.height(12.dp))
-            Text("Nothing scanned yet", style = MaterialTheme.typography.titleMedium)
+            Text("Nothing scanned yet", style = MaterialTheme.typography.titleMedium, color = Color.White)
             Spacer(Modifier.height(4.dp))
             Text(
                 "Scan a page or import a PDF and it will show up here.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            TextButton(onClick = onScan) { Text("Scan a document") }
+            TextButton(onClick = onScan) { Text("Scan a document", color = Color(0xFFAC8CFF)) }
         }
     }
 }
