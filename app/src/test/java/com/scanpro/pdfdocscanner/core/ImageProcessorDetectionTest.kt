@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -43,6 +44,33 @@ class ImageProcessorDetectionTest {
 
             val quad = processor.detectQuad(bitmap)
             assertNotNull("The page's four corners should be detected", quad)
+            assertTrue(PageQuadGeometry.isValid(quad, minArea = 0.12f, minEdge = 0.1f))
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun detectsSkewedPageAndReturnsValidPerspectiveCorners() = runBlocking {
+        val bitmap = Bitmap.createBitmap(320, 400, Bitmap.Config.ARGB_8888)
+        try {
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(android.graphics.Color.rgb(28, 28, 28))
+            val page = Path().apply {
+                moveTo(66f, 42f)
+                lineTo(278f, 78f)
+                lineTo(246f, 358f)
+                lineTo(38f, 320f)
+                close()
+            }
+            canvas.drawPath(
+                page,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE },
+            )
+
+            val processor = ImageProcessor(PdfEngine(context))
+            val quad = processor.detectQuad(bitmap)
+            assertNotNull("A clearly separated skewed page should yield four corners", quad)
             assertTrue(PageQuadGeometry.isValid(quad, minArea = 0.12f, minEdge = 0.1f))
         } finally {
             bitmap.recycle()
