@@ -7,23 +7,24 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColors = lightColorScheme(
     primary = Indigo600,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
+    onPrimary = Color.White,
     primaryContainer = Indigo50,
     onPrimaryContainer = Indigo900,
-    secondary = Amber600,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
-    secondaryContainer = ColorTokens.CoralContainer,
-    onSecondaryContainer = ColorTokens.CoralInk,
-    background = Slate50,
+    secondary = AccentPink,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFE2F1),
+    onSecondaryContainer = Color(0xFF65143E),
+    background = Color(0xFFF6F2FF),
     onBackground = Slate900,
-    surface = androidx.compose.ui.graphics.Color.White,
+    surface = Color(0xFFFFFFFF),
     onSurface = Slate900,
-    surfaceVariant = Slate100,
+    surfaceVariant = Color(0xFFECE6F7),
     onSurfaceVariant = Slate500,
     outline = Slate300,
     outlineVariant = Slate200,
@@ -33,28 +34,24 @@ private val LightColors = lightColorScheme(
 private val DarkColors = darkColorScheme(
     primary = Indigo300,
     onPrimary = Slate950,
-    primaryContainer = Slate800,
-    onPrimaryContainer = Indigo100,
-    secondary = Amber400,
-    onSecondary = Slate950,
-    secondaryContainer = ColorTokens.DarkCoralContainer,
-    onSecondaryContainer = Amber400,
+    primaryContainer = Color(0xFF4B2B88),
+    onPrimaryContainer = Color(0xFFF0E8FF),
+    secondary = AccentPink,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF61264B),
+    onSecondaryContainer = Color(0xFFFFD9EC),
+    tertiary = AccentCyan,
+    onTertiary = Slate950,
     background = Slate950,
-    onBackground = Slate100,
-    surface = Slate900,
-    onSurface = Slate100,
-    surfaceVariant = Slate800,
-    onSurfaceVariant = Slate400,
-    outline = Slate700,
-    outlineVariant = Slate800,
+    onBackground = Slate50,
+    surface = GlassSurfaceStrong,
+    onSurface = Slate50,
+    surfaceVariant = GlassSurface,
+    onSurfaceVariant = Color(0xFFC1B6D8),
+    outline = GlassOutline,
+    outlineVariant = Color(0xFF3D3158),
     error = ErrorRedDark,
 )
-
-private object ColorTokens {
-    val CoralContainer = androidx.compose.ui.graphics.Color(0xFFFFE9DC)
-    val CoralInk = androidx.compose.ui.graphics.Color(0xFF713719)
-    val DarkCoralContainer = androidx.compose.ui.graphics.Color(0xFF53301F)
-}
 
 /** mode: 0 = follow system, 1 = light, 2 = dark */
 @Composable
