@@ -195,7 +195,42 @@ jobs:
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
+            set -euo pipefail
             chmod +x gradlew
+
+            # The software-emulated device can report as booted before Android
+            # system_server has started PackageManager and Settings providers.
+            # Wait for both services before installing the instrumentation APK.
+            adb wait-for-device
+            boot_deadline=$((SECONDS + 600))
+            until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; do
+              if (( SECONDS >= boot_deadline )); then
+                echo "Emulator did not finish Android boot within 600 seconds."
+                adb shell getprop || true
+                exit 1
+              fi
+              sleep 5
+            done
+
+            services_deadline=$((SECONDS + 300))
+            while true; do
+              package_status="$(adb shell service check package 2>/dev/null | tr -d '\r' || true)"
+              settings_status="$(adb shell service check settings 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$package_status" == *"found"* && "$settings_status" == *"found"* ]] &&
+                 adb shell cmd package list packages >/dev/null 2>&1; then
+                break
+              fi
+              if (( SECONDS >= services_deadline )); then
+                echo "Android boot completed, but PackageManager/Settings did not become ready."
+                echo "Package service: $package_status"
+                echo "Settings service: $settings_status"
+                adb logcat -d -t 1200 || true
+                exit 1
+              fi
+              sleep 5
+            done
+
+            echo "Android boot and required system services are ready."
             ./gradlew --no-daemon --console=plain connectedDebugAndroidTest
 
       - name: Build debug and release APKs
