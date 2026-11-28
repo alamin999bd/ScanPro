@@ -22,9 +22,12 @@ services_deadline=$(($(date +%s) + 300))
 while :; do
   package_status=$(adb shell service check package 2>/dev/null | tr -d '\r' || true)
   settings_status=$(adb shell service check settings 2>/dev/null | tr -d '\r' || true)
+  api_level=$(adb shell getprop ro.build.version.sdk 2>/dev/null | tr -d '\r' || true)
   if echo "$package_status" | grep -q found &&
      echo "$settings_status" | grep -q found &&
+     [ -n "$api_level" ] &&
      adb shell cmd package list packages >/dev/null 2>&1; then
+    echo "Detected Android API level: $api_level"
     break
   fi
   if [ "$(date +%s)" -ge "$services_deadline" ]; then
