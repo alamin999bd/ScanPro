@@ -186,10 +186,12 @@ jobs:
           # API 30 is lighter under forced TCG software emulation than API 35.
           # Keep the same real instrumentation tests; only the CI device image changes.
           api-level: 30
-          target: google_apis
+          # These tests do not need Google Play services; use the smaller AOSP image.
+          target: default
           arch: x86_64
           profile: pixel_2
-          cores: 2
+          # Give the software-emulated guest more host CPU time during first boot.
+          cores: 4
           emulator-boot-timeout: 1200
           # Software-emulated ADB settings calls can drop the emulator connection.
           # Leave animations enabled; test correctness does not depend on animation speed.
