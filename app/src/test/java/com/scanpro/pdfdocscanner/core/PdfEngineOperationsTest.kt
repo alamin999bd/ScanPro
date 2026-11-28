@@ -201,6 +201,60 @@ class PdfEngineOperationsTest {
         )
     }
 
+    @Test
+    fun selectableTextSearchReturnsMatchingPageAndRejectsBlankQuery() = runBlocking {
+        val source = createPdf("TARGET-ALPHA", "OTHER-CONTENT", "TARGET-GAMMA")
+
+        val matches = engine.searchText(source, "TARGET")
+        assertEquals(listOf(1, 3), matches.map { it.first })
+        assertTrue(matches.all { it.second.contains("TARGET") })
+
+        assertOperationFails {
+            runBlocking { engine.searchText(source, "   ") }
+        }
+    }
+
+    @Test
+    fun invalidBookmarkAndMarkupRequestsAreRejectedWithoutCreatingOutput() {
+        val source = createPdf("VALID-SOURCE")
+        val badBookmarkPage = output("bad-bookmark-page.pdf")
+        val blankBookmark = output("blank-bookmark.pdf")
+        val badMarkupPage = output("bad-markup-page.pdf")
+
+        assertOperationFails {
+            runBlocking { engine.addBookmark(source, badBookmarkPage, "Invalid page", 0) }
+        }
+        assertOperationFails {
+            runBlocking { engine.addBookmark(source, blankBookmark, "   ", 1) }
+        }
+        assertOperationFails {
+            runBlocking {
+                engine.addPageMarkup(
+                    input = source, out = badMarkupPage, pageNumber = 2, kind = "NOTE",
+                    note = "Out of range", x = 60f, y = 100f, width = 120f, height = 32f,
+                )
+            }
+        }
+
+        assertFalse(badBookmarkPage.exists())
+        assertFalse(blankBookmark.exists())
+        assertFalse(badMarkupPage.exists())
+        assertEquals(listOf("VALID-SOURCE"), pageTexts(source))
+    }
+
+    @Test
+    fun mergeRejectsSingleInputWithoutCreatingOutput() {
+        val source = createPdf("SOURCE-ONLY")
+        val merged = output("invalid-single-merge.pdf")
+
+        assertOperationFails {
+            runBlocking { engine.merge(listOf(source), merged) }
+        }
+
+        assertFalse(merged.exists())
+        assertEquals(listOf("SOURCE-ONLY"), pageTexts(source))
+    }
+
     private fun assertOperationFails(operation: () -> Unit) {
         var failed = false
         try {
