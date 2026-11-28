@@ -92,5 +92,11 @@
 ## 2026-11-28 — Automated PDF regression coverage update
 - `PdfEngineOperationsTest.kt` এখন dedicated synthetic PDF fixture তৈরি করে ১৩টি JVM regression test চালায়; Build #265-এ সব ৫৬টি JVM test পাস করেছে।
 - কভারেজে merge/extract/delete/reorder, rotate, password lock/unlock, watermark, page numbers, bookmark, text-preserving optimize, note/highlight annotation, selectable-text search এবং invalid/malformed/duplicate selection cases আছে।
-- Build #266 (run 46125098712, commit b68d898d738d37db172e58e7fd14a73098ade22b) latest documentation HEAD-এ SUCCESS।
+- Build #267 (run 46125913478, commit b3de0c8dbda1ab7369b560f57194bb274fc522b8) latest documentation HEAD-এ SUCCESS; Unit Tests, OfficeConverter Android Emulator Test, Debug/Release build, APK signature verification এবং source ZIP verification সব সফল। Release signing-এ persistent key configure না থাকায় runner debug certificate ব্যবহৃত হয়েছে।
 - সীমাবদ্ধতা: synthetic fixture test external viewer rendering, real-world mixed Bangla/English PDFs, scanned/image-heavy files, CropBox/rotation visual placement বা Samsung M12 performance প্রমাণ করে না। P1–P7 manual sample QA এবং physical-device QA এখনো pending।
+
+
+## 2026-11-28 — Build #267 verification
+- GitHub Actions run `46125913478` এবং commit `b3de0c8dbda1ab7369b560f57194bb274fc522b8` SUCCESS। OfficeConverter instrumentation-এর ৩টি test-সহ workflow-এর সব required job step সফল।
+- এই CI ফলাফল synthetic automated test ও build pipeline যাচাই করে; P1–P7 বাস্তব PDF sample execution বা Samsung Galaxy M12 device QA নয়।
+- পরবর্তী QA gate: controlled synthetic sample PDF set তৈরি/ব্যবহার করে app workflow এবং external viewer-এ output যাচাই; তারপর physical-device QA।
