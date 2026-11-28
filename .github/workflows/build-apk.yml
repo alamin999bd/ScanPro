@@ -190,7 +190,9 @@ jobs:
           profile: pixel_2
           cores: 2
           emulator-boot-timeout: 900
-          disable-animations: true
+          # Software-emulated ADB settings calls can drop the emulator connection.
+          # Leave animations enabled; test correctness does not depend on animation speed.
+          disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
             chmod +x gradlew
