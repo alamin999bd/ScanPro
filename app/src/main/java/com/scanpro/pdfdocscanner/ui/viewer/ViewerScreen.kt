@@ -24,6 +24,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.ZoomIn
@@ -83,6 +84,7 @@ fun ViewerScreen(container: AppContainer, docId: Long, onBack: () -> Unit) {
     val export = rememberDocExporter(container)
     var zoomIndex by remember { mutableIntStateOf(0) }
     var searchExpanded by remember { mutableStateOf(false) }
+    var aiExpanded by remember { mutableStateOf(false) }
 
     val doc: DocumentEntity? = when (val s = state) {
         is ViewerState.Pdf -> s.doc
@@ -98,7 +100,10 @@ fun ViewerScreen(container: AppContainer, docId: Long, onBack: () -> Unit) {
                 onBack = onBack,
                 actions = {
                     if (doc != null) {
-                        if (doc.type == "pdf") IconButton(onClick = { searchExpanded = !searchExpanded }) { Icon(Icons.Rounded.Search, contentDescription = "Search PDF") }
+                        if (doc.type == "pdf") {
+                            IconButton(onClick = { searchExpanded = !searchExpanded }) { Icon(Icons.Rounded.Search, contentDescription = "Search PDF") }
+                            IconButton(onClick = { aiExpanded = true }) { Icon(Icons.Rounded.AutoAwesome, contentDescription = "Gemini PDF Assistant") }
+                        }
                         IconButton(onClick = { zoomIndex = (zoomIndex + 1) % ZOOM_LEVELS.size }) {
                             Icon(Icons.Rounded.ZoomIn, contentDescription = "Zoom ${(ZOOM_LEVELS[zoomIndex] * 100).toInt()}%")
                         }
@@ -126,6 +131,7 @@ fun ViewerScreen(container: AppContainer, docId: Long, onBack: () -> Unit) {
                 is ViewerState.Pdf -> PdfPages(vm, s, ZOOM_LEVELS[zoomIndex], searchExpanded)
                 is ViewerState.Picture -> PictureView(container, s.doc, ZOOM_LEVELS[zoomIndex])
             }
+            if (aiExpanded && state is ViewerState.Pdf) GeminiDocumentAssistant(context, vm::extractDocumentText) { aiExpanded = false }
         }
     }
 }
