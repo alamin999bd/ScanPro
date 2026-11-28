@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val ciEmulator = providers.gradleProperty("ciEmulator").orNull == "true"
+
 android {
     namespace = "com.scanpro.pdfdocscanner"
     compileSdk = 35
@@ -16,7 +18,10 @@ android {
         versionCode = 9
         versionName = "0.7.0"
         vectorDrawables.useSupportLibrary = true
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            if (ciEmulator) abiFilters += "x86_64"
+        }
     }
 
     signingConfigs {
