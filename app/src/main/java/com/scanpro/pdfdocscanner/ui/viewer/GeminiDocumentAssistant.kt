@@ -47,7 +47,7 @@ fun GeminiDocumentAssistant(context: Context, onExtractText: suspend () -> Strin
                     val prompt = """
                         Use only the supplied document for document-specific facts. If information is missing, say so.
                         Task: $task
-                        User question: \${question.trim().ifBlank { "None" }}
+                        User question: ${question.trim().ifBlank { "None" }}
                         Reply in clear, simple Bengali unless another language is explicitly requested.
                         Document text:
                         $text
