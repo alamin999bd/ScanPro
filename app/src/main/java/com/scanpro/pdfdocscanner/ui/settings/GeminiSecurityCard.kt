@@ -32,7 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class GeminiDialog { CREATE_PIN, SAVE_KEY, CHANGE_PIN, DELETE_KEY }
+private enum class GeminiDialog { CREATE_PIN, SAVE_KEY, CHANGE_PIN, DELETE_KEY, VIEW_KEY, RESET_SECURITY }
 
 /** Settings UI for a device-local Gemini key. The key itself is never displayed. */
 @Composable
@@ -45,6 +45,7 @@ fun GeminiSecurityCard(context: Context) {
     var oldPin by remember { mutableStateOf("") }
     var apiKey by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
+    var revealedKey by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
 
     fun resetFields() {
@@ -86,9 +87,13 @@ fun GeminiSecurityCard(context: Context) {
                     Button(onClick = { resetFields(); dialog = GeminiDialog.SAVE_KEY }) {
                         Text(if (vault.hasApiKey()) "Update API Key" else "Add API Key")
                     }
-                    OutlinedButton(onClick = { resetFields(); dialog = GeminiDialog.CHANGE_PIN }) {
-                        Text("Change PIN")
+                    OutlinedButton(onClick = { resetFields(); revealedKey = null; dialog = GeminiDialog.VIEW_KEY }, enabled = vault.hasApiKey()) {
+                        Text("View API Key")
                     }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { resetFields(); dialog = GeminiDialog.CHANGE_PIN }) { Text("Change PIN") }
+                    OutlinedButton(onClick = { resetFields(); dialog = GeminiDialog.RESET_SECURITY }) { Text("Reset PIN & Key") }
                 }
                 if (vault.hasApiKey()) {
                     OutlinedButton(onClick = { resetFields(); dialog = GeminiDialog.DELETE_KEY }) {
@@ -206,6 +211,58 @@ fun GeminiSecurityCard(context: Context) {
                         }
                     }
                 }) { Text(if (busy) "Removing…" else "Remove key") }
+            },
+            dismissButton = { TextButton(enabled = !busy, onClick = { dialog = null }) { Text("Cancel") } },
+        )
+        GeminiDialog.VIEW_KEY -> AlertDialog(
+            onDismissRequest = { if (!busy) { dialog = null; revealedKey = null } },
+            title = { Text("View Gemini API Key") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PinField("6-digit PIN", pin) { pin = it }
+                    revealedKey?.let { key ->
+                        androidx.compose.foundation.text.selection.SelectionContainer { Text(key, style = MaterialTheme.typography.bodySmall) }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !busy && revealedKey == null, onClick = {
+                    if (pin.length != 6) message = "Enter your six-digit PIN."
+                    else {
+                        busy = true
+                        scope.launch {
+                            val result = runCatching { withContext(Dispatchers.IO) { vault.readApiKey(pin) } }
+                            busy = false
+                            revealedKey = result.getOrNull()
+                            message = if (result.isSuccess) "API key verified." else result.exceptionOrNull()?.message ?: "Could not verify PIN."
+                        }
+                    }
+                }) { Text(if (busy) "Checking…" else "Verify PIN") }
+            },
+            dismissButton = { TextButton(enabled = !busy, onClick = { dialog = null; revealedKey = null }) { Text("Close") } },
+        )
+        GeminiDialog.RESET_SECURITY -> AlertDialog(
+            onDismissRequest = { if (!busy) dialog = null },
+            title = { Text("Reset PIN and API Key?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PinField("Current 6-digit PIN", pin) { pin = it }
+                    Text("This removes the saved Gemini API key and PIN protection. Documents and other app settings remain untouched.", style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !busy, onClick = {
+                    if (pin.length != 6) message = "Enter your current six-digit PIN."
+                    else {
+                        busy = true
+                        scope.launch {
+                            val result = runCatching { withContext(Dispatchers.IO) { vault.resetSecurity(pin) } }
+                            busy = false
+                            message = if (result.isSuccess) "Gemini security reset. Set a new PIN to add a key." else result.exceptionOrNull()?.message ?: "Could not reset security."
+                            if (result.isSuccess) dialog = null
+                        }
+                    }
+                }) { Text(if (busy) "Resetting…" else "Reset security") }
             },
             dismissButton = { TextButton(enabled = !busy, onClick = { dialog = null }) { Text("Cancel") } },
         )
