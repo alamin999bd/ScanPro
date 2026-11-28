@@ -1,6 +1,6 @@
 package com.scanpro.pdfdocscanner.security
 
-import android.security.keystore.KeyStore
+import java.security.KeyStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
