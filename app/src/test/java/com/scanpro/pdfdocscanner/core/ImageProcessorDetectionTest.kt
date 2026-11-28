@@ -11,6 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -18,7 +19,7 @@ import org.robolectric.annotation.Config
 class ImageProcessorDetectionTest {
 
     private val context: Context
-        get() = org.robolectric.RuntimeEnvironment.getApplication()
+        get() = RuntimeEnvironment.getApplication()
 
     @Test
     fun detectsHighContrastPageBoundsAndFourCorners() = runBlocking {
