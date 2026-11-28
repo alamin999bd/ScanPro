@@ -2,6 +2,12 @@ name: Build Document Scanner APK
 
 on:
   workflow_dispatch:
+    inputs:
+      use_persistent_signing:
+        description: "Require the saved release keystore (enable only after repository secrets are configured)"
+        required: true
+        type: boolean
+        default: false
   push:
     branches: [main, master, ocr, document-scanner-premium]
 
@@ -182,6 +188,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Prepare persistent release signing key
+        if: ${{ inputs.use_persistent_signing }}
+        env:
+          SCANPRO_KEYSTORE_BASE64: ${{ secrets.SCANPRO_KEYSTORE_BASE64 }}
+          SCANPRO_KEYSTORE_PASSWORD: ${{ secrets.SCANPRO_KEYSTORE_PASSWORD }}
+          SCANPRO_KEY_ALIAS: ${{ secrets.SCANPRO_KEY_ALIAS }}
+          SCANPRO_KEY_PASSWORD: ${{ secrets.SCANPRO_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${SCANPRO_KEYSTORE_BASE64:?Missing SCANPRO_KEYSTORE_BASE64 repository secret}"
+          : "${SCANPRO_KEYSTORE_PASSWORD:?Missing SCANPRO_KEYSTORE_PASSWORD repository secret}"
+          : "${SCANPRO_KEY_ALIAS:?Missing SCANPRO_KEY_ALIAS repository secret}"
+          : "${SCANPRO_KEY_PASSWORD:?Missing SCANPRO_KEY_PASSWORD repository secret}"
+          KEYSTORE_PATH="$RUNNER_TEMP/scanpro-release.jks"
+          printf '%s' "$SCANPRO_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          test -s "$KEYSTORE_PATH"
+          echo "SCANPRO_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "SCANPRO_KEYSTORE_PASSWORD=$SCANPRO_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "SCANPRO_KEY_ALIAS=$SCANPRO_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "SCANPRO_KEY_PASSWORD=$SCANPRO_KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "Persistent release signing key loaded from Actions secrets."
+
       - name: Build debug and release APKs
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -206,6 +234,8 @@ jobs:
 
       - name: Verify APK signatures and signing identity
         working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          REQUIRE_PERSISTENT_SIGNING: ${{ inputs.use_persistent_signing }}
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
@@ -228,10 +258,17 @@ jobs:
             if [[ -n "$DEBUG_CERT" ]]; then echo "- Debug certificate SHA-256: `$DEBUG_CERT`"; else echo "- Debug certificate fingerprint: unavailable in tool output"; fi
             if [[ -n "$RELEASE_CERT" ]]; then echo "- Release certificate SHA-256: `$RELEASE_CERT`"; else echo "- Release certificate fingerprint: unavailable in tool output"; fi
           } >> "$GITHUB_STEP_SUMMARY"
-          if [[ -n "${SCANPRO_KEYSTORE_PATH:-}" ]]; then
+          if [[ "$REQUIRE_PERSISTENT_SIGNING" == "true" ]]; then
+            test -n "${SCANPRO_KEYSTORE_PATH:-}" || { echo "Persistent signing was required but no keystore was loaded."; exit 1; }
+            if [[ "$DEBUG_CERT" == "$RELEASE_CERT" ]]; then
+              echo "Release APK unexpectedly uses the debug signing certificate." >&2
+              exit 1
+            fi
+            echo "- Release signing identity: persistent SCANPRO keystore; certificate differs from debug key." >> "$GITHUB_STEP_SUMMARY"
+          elif [[ -n "${SCANPRO_KEYSTORE_PATH:-}" ]]; then
             echo "- Release signing identity: configured SCANPRO keystore." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "- Release signing identity: Gradle debug-key fallback (not a Play Store production signing key)." >> "$GITHUB_STEP_SUMMARY"
+            echo "- Release signing identity: temporary Gradle debug-key fallback. Do not distribute as a final updateable release." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Package full source project
