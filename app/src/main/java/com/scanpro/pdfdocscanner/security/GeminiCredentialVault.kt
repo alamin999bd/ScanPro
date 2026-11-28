@@ -62,9 +62,11 @@ class GeminiCredentialVault(context: Context) {
     fun saveApiKey(pin: String, apiKey: String) {
         require(apiKey.isNotBlank()) { "API key cannot be empty." }
         check(verifyPin(pin)) { "Incorrect PIN." }
-        val iv = ByteArray(GCM_IV_BYTES).also(random::nextBytes)
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateAesKey(), GCMParameterSpec(GCM_TAG_BITS, iv))
+        // Android Keystore generates the GCM IV when randomized encryption is required.
+        // Supplying our own IV here is rejected by AndroidKeyStore.
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateAesKey())
+        val iv = cipher.iv ?: error("Android Keystore did not provide a GCM IV.")
         val encrypted = cipher.doFinal(apiKey.trim().toByteArray(Charsets.UTF_8))
         prefs.edit()
             .putString(KEY_IV, Base64.encodeToString(iv, Base64.NO_WRAP))
