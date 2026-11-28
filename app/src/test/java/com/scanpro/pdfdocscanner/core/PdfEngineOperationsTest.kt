@@ -281,6 +281,12 @@ class PdfEngineOperationsTest {
 
         assertEquals(2, engine.deletePages(source, listOf(2, 2), deleted))
         assertEquals(listOf("FIRST", "THIRD"), pageTexts(deleted))
+
+        // Repeating the same page more times than the document page count must still
+        // delete that one page only; validation must use unique selections.
+        val repeated = output("repeated-delete.pdf")
+        assertEquals(2, engine.deletePages(source, listOf(2, 2, 2), repeated))
+        assertEquals(listOf("FIRST", "THIRD"), pageTexts(repeated))
         assertEquals(listOf("FIRST", "SECOND", "THIRD"), pageTexts(source))
     }
 
