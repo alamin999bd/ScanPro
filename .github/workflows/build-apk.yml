@@ -59,8 +59,6 @@ jobs:
       - name: Prepare PDFBox Android assets for Robolectric tests
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          # Resolve the exact AAR through the app's declared Gradle dependency.
-          # This avoids a second, direct Maven Central download (which was rate-limited).
           cat > "$RUNNER_TEMP/stage-pdfbox.init.gradle" <<'GRADLE'
           allprojects { p ->
               p.afterEvaluate {
@@ -74,15 +72,9 @@ jobs:
                                   it.name == 'pdfbox-android' &&
                                   it.moduleVersion.id.version == version
                               }
-                              if (artifact == null) {
-                                  throw new GradleException("Could not resolve com.tom-roush:pdfbox-android:${version} from debugRuntimeClasspath")
-                              }
-
+                              if (artifact == null) throw new GradleException("Could not resolve com.tom-roush:pdfbox-android:${version}")
                               def aar = artifact.file
-                              if (!aar.isFile() || aar.length() == 0) {
-                                  throw new GradleException("Resolved PDFBox AAR is missing or empty: ${aar}")
-                              }
-
+                              if (!aar.isFile() || aar.length() == 0) throw new GradleException("Resolved PDFBox AAR is missing or empty: ${aar}")
                               def assetsDir = p.file('src/main/assets')
                               def zip = new java.util.zip.ZipFile(aar)
                               int copied = 0
@@ -94,30 +86,22 @@ jobs:
                                           def relative = entry.name.substring('assets/'.length())
                                           def output = new File(assetsDir, relative)
                                           output.parentFile.mkdirs()
-                                          zip.getInputStream(entry).withCloseable { input ->
-                                              output.withOutputStream { stream -> stream << input }
-                                          }
+                                          zip.getInputStream(entry).withCloseable { input -> output.withOutputStream { stream -> stream << input } }
                                           copied++
                                       }
                                   }
-                              } finally {
-                                  zip.close()
-                              }
-
+                              } finally { zip.close() }
                               def identityH = new File(assetsDir, 'com/tom_roush/fontbox/resources/cmap/Identity-H')
-                              if (copied == 0 || !identityH.isFile() || identityH.length() == 0) {
-                                  throw new GradleException("PDFBox assets were not staged correctly; copied=${copied}, Identity-H=${identityH}")
-                              }
-                              println("Staged ${copied} PDFBox AAR assets from ${aar} into app/src/main/assets.")
+                              if (copied == 0 || !identityH.isFile() || identityH.length() == 0) throw new GradleException("PDFBox assets staging failed; copied=${copied}")
+                              println("Staged ${copied} PDFBox AAR assets from ${aar}.")
                           }
                       }
                   }
               }
           }
           GRADLE
-
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain --init-script "$RUNNER_TEMP/stage-pdfbox.init.gradle" :app:stagePdfBoxAndroidAssets
+          ./gradlew --no-daemon --console=plain --max-workers=2 --init-script "$RUNNER_TEMP/stage-pdfbox.init.gradle" :app:stagePdfBoxAndroidAssets
 
       - name: Verify Bengali and Latin font glyph coverage
         working-directory: ${{ env.PROJECT_DIR }}
@@ -125,14 +109,11 @@ jobs:
           python3 -m pip install --disable-pip-version-check fonttools
           python3 - <<'PY'
           from fontTools.ttLib import TTFont
-
           def codepoints(path):
               font = TTFont(path)
               result = set()
-              for table in font["cmap"].tables:
-                  result.update(table.cmap.keys())
+              for table in font["cmap"].tables: result.update(table.cmap.keys())
               return result
-
           bengali = codepoints("app/src/main/assets/fonts/NotoSansBengali.ttf")
           latin = codepoints("app/src/main/assets/fonts/NotoSans-Regular.ttf")
           required_bengali = {ord(c) for c in "বাংলা পরীক্ষা"}
@@ -140,11 +121,9 @@ jobs:
           missing_bn = sorted(required_bengali - bengali)
           missing_en = sorted(required_latin - latin)
           if missing_bn or missing_en:
-              raise SystemExit(
-                  f"Missing Bengali glyphs: {[hex(x) for x in missing_bn]}; "
-                  f"missing Latin glyphs: {[hex(x) for x in missing_en]}"
-              )
+              raise SystemExit(f"Missing Bengali glyphs: {[hex(x) for x in missing_bn]}; missing Latin glyphs: {[hex(x) for x in missing_en]}")
           print(f"Font coverage verified: Bengali={len(bengali)}, Latin={len(latin)} code points")
+          PY
 
       - name: Run unit tests with full failure details
         working-directory: ${{ env.PROJECT_DIR }}
@@ -163,7 +142,7 @@ jobs:
               }
           }
           GRADLE
-          ./gradlew --no-daemon --console=plain --init-script "$RUNNER_TEMP/test-logging.init.gradle" testDebugUnitTest --stacktrace
+          ./gradlew --no-daemon --console=plain --max-workers=2 --init-script "$RUNNER_TEMP/test-logging.init.gradle" testDebugUnitTest --stacktrace
 
       - name: Upload unit test reports
         if: always()
@@ -179,26 +158,16 @@ jobs:
       - name: Run OfficeConverter tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         env:
-          # GitHub-hosted Linux runners may not expose KVM. Android Emulator
-          # otherwise exits immediately with "-accel off is not supported".
           ANDROID_I_WANT_MY_TCG: "yes"
         with:
-          # API 30 is lighter under forced TCG software emulation than API 35.
-          # Keep the same real instrumentation tests; only the CI device image changes.
           api-level: 30
-          # These tests do not need Google Play services; use the smaller AOSP image.
           target: default
           arch: x86_64
           profile: pixel_2
-          # Give the software-emulated guest more host CPU time during first boot.
-          cores: 4
+          cores: 2
           emulator-boot-timeout: 1200
-          # Software-emulated ADB settings calls can drop the emulator connection.
-          # Leave animations enabled; test correctness does not depend on animation speed.
           disable-animations: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          # The emulator action executes each script line in a separate sh process;
-          # keep loops and conditionals in a standalone POSIX shell script.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 3072
           script: sh .github/scripts/run-office-converter-tests.sh
 
       - name: Build debug and release APKs
@@ -206,10 +175,8 @@ jobs:
         run: |
           chmod +x gradlew
           set -o pipefail
-          # Room KSP writes the same exported schema directory for both variants.
-          # Run variants sequentially so their schema generation cannot race.
-          ./gradlew --no-daemon --console=plain assembleDebug 2>&1 | tee build.log
-          ./gradlew --no-daemon --console=plain assembleRelease 2>&1 | tee -a build.log
+          ./gradlew --no-daemon --console=plain --max-workers=2 assembleDebug 2>&1 | tee build.log
+          ./gradlew --no-daemon --console=plain --max-workers=2 assembleRelease 2>&1 | tee -a build.log
 
       - name: Build error summary
         if: failure()
@@ -234,18 +201,14 @@ jobs:
           test -x "$APKSIGNER"
           DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
           RELEASE_APK="app/build/outputs/apk/release/app-release.apk"
-
           "$APKSIGNER" verify --verbose --print-certs "$DEBUG_APK" > debug-signing-report.txt 2>&1
           "$APKSIGNER" verify --verbose --print-certs "$RELEASE_APK" > release-signing-report.txt 2>&1
-
           echo "### Debug APK apksigner report"
           cat debug-signing-report.txt
           echo "### Release APK apksigner report"
           cat release-signing-report.txt
-
           DEBUG_CERT="$(awk 'tolower($0) ~ /certificate sha-256 digest/ { sub(/^.*: */, ""); print; exit }' debug-signing-report.txt)"
           RELEASE_CERT="$(awk 'tolower($0) ~ /certificate sha-256 digest/ { sub(/^.*: */, ""); print; exit }' release-signing-report.txt)"
-
           {
             echo "## APK signing verification"
             echo "- Debug APK signature: valid (apksigner verify passed)"
@@ -253,7 +216,6 @@ jobs:
             if [[ -n "$DEBUG_CERT" ]]; then echo "- Debug certificate SHA-256: `$DEBUG_CERT`"; else echo "- Debug certificate fingerprint: unavailable in tool output"; fi
             if [[ -n "$RELEASE_CERT" ]]; then echo "- Release certificate SHA-256: `$RELEASE_CERT`"; else echo "- Release certificate fingerprint: unavailable in tool output"; fi
           } >> "$GITHUB_STEP_SUMMARY"
-
           if [[ -n "${SCANPRO_KEYSTORE_PATH:-}" ]]; then
             echo "- Release signing identity: configured SCANPRO keystore." >> "$GITHUB_STEP_SUMMARY"
           else
