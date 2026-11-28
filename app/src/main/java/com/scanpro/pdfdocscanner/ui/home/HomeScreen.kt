@@ -1,5 +1,14 @@
 package com.scanpro.pdfdocscanner.ui.home
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +31,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material.icons.rounded.Badge
 import androidx.compose.material.icons.rounded.Construction
@@ -32,7 +42,6 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.UploadFile
-import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -168,6 +177,24 @@ fun HomeScreen(
 
 @Composable
 private fun HomeHeader(onSearch: () -> Unit) {
+    val context = LocalContext.current
+    var online by remember { mutableStateOf(isInternetValidated(context)) }
+    DisposableEffect(context) {
+        val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) { online = isInternetValidated(context) }
+            override fun onLost(network: Network) { online = isInternetValidated(context) }
+            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+                online = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            }
+        }
+        val request = android.net.NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        runCatching { manager.registerNetworkCallback(request, callback) }
+        onDispose { runCatching { manager.unregisterNetworkCallback(callback) } }
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             Text("Document Scanner", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
@@ -185,13 +212,13 @@ private fun HomeHeader(onSearch: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                Icons.Rounded.WifiOff,
+                if (online) Icons.Rounded.Wifi else Icons.Rounded.WifiOff,
                 contentDescription = null,
                 modifier = Modifier.size(15.dp),
                 tint = Color.White,
             )
             Spacer(Modifier.width(5.dp))
-            Text("Offline", style = MaterialTheme.typography.labelMedium, color = Color.White)
+            Text(if (online) "Online" else "Offline", style = MaterialTheme.typography.labelMedium, color = Color.White)
         }
         IconButton(onClick = onSearch) {
             Icon(Icons.Rounded.Search, contentDescription = "Search documents")
@@ -306,4 +333,13 @@ private fun RecentEmptyState(onScan: () -> Unit) {
             TextButton(onClick = onScan) { Text("Scan a document", color = Color(0xFFAC8CFF)) }
         }
     }
+}
+
+
+private fun isInternetValidated(context: Context): Boolean {
+    val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network = manager.activeNetwork ?: return false
+    val capabilities = manager.getNetworkCapabilities(network) ?: return false
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 }
