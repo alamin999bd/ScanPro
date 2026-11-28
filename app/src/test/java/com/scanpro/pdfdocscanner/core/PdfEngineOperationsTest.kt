@@ -148,6 +148,69 @@ class PdfEngineOperationsTest {
         assertTrue(markups.any { it.kind == "HIGHLIGHT" })
     }
 
+    @Test
+    fun invalidPageSelectionsAndRotationAreRejectedWithoutChangingSource() {
+        val source = createPdf("KEEP-ONE", "KEEP-TWO", "KEEP-THREE")
+        val badExtract = output("bad-extract.pdf")
+        val badDelete = output("bad-delete.pdf")
+        val badReorder = output("bad-reorder.pdf")
+        val badRotation = output("bad-rotation.pdf")
+
+        assertOperationFails {
+            runBlocking { engine.extractPages(source, listOf(0), badExtract) }
+        }
+        assertOperationFails {
+            runBlocking { engine.deletePages(source, listOf(1, 2, 3), badDelete) }
+        }
+        assertOperationFails {
+            runBlocking { engine.reorderPages(source, listOf(1, 1, 3), badReorder) }
+        }
+        assertOperationFails {
+            runBlocking { engine.rotatePages(source, 45, badRotation) }
+        }
+
+        assertFalse(badExtract.exists())
+        assertFalse(badDelete.exists())
+        assertFalse(badReorder.exists())
+        assertFalse(badRotation.exists())
+        assertEquals(listOf("KEEP-ONE", "KEEP-TWO", "KEEP-THREE"), pageTexts(source))
+    }
+
+    @Test
+    fun unlockWithWrongPasswordIsRejectedAndProtectedSourceRemainsIntact() {
+        val source = createPdf("CONFIDENTIAL-ONE", "CONFIDENTIAL-TWO")
+        val locked = output("wrong-password-locked.pdf")
+        val unlocked = output("wrong-password-unlocked.pdf")
+
+        runBlocking { assertEquals(2, engine.protect(source, locked, "right-pass")) }
+        assertTrue(engine.isPasswordProtected(locked))
+
+        assertOperationFails {
+            runBlocking { engine.unlock(locked, unlocked, "wrong-pass") }
+        }
+
+        assertFalse(unlocked.exists())
+        assertTrue(engine.isPasswordProtected(locked))
+        assertEquals(
+            listOf("CONFIDENTIAL-ONE", "CONFIDENTIAL-TWO"),
+            runBlocking {
+                val correctlyUnlocked = output("correctly-unlocked.pdf")
+                assertEquals(2, engine.unlock(locked, correctlyUnlocked, "right-pass"))
+                pageTexts(correctlyUnlocked)
+            },
+        )
+    }
+
+    private fun assertOperationFails(operation: () -> Unit) {
+        var failed = false
+        try {
+            operation()
+        } catch (_: Exception) {
+            failed = true
+        }
+        assertTrue("Expected invalid PDF operation to be rejected", failed)
+    }
+
     private fun createPdf(vararg labels: String): File {
         val file = output("fixture-${labels.size}-${labels.first()}.pdf")
         PDDocument().use { document ->
