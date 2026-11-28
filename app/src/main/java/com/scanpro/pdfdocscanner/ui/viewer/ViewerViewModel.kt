@@ -12,6 +12,8 @@ import com.scanpro.pdfdocscanner.core.PdfBookmark
 import com.scanpro.pdfdocscanner.core.PdfPageMarkup
 import com.scanpro.pdfdocscanner.data.DocumentRepository
 import com.scanpro.pdfdocscanner.data.db.DocumentEntity
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -126,6 +128,18 @@ class ViewerViewModel(
                     ViewerState.Failed("This PDF could not be opened. It may be damaged.")
                 }
             }
+        }
+    }
+
+    /** Extracts selectable/OCR text from the currently opened PDF for an explicitly requested AI action. */
+    suspend fun extractDocumentText(maxChars: Int = 24_000): String = withContext(Dispatchers.IO) {
+        require(maxChars in 1..24_000) { "Text limit is invalid" }
+        val file = openedFile ?: throw IllegalStateException("PDF is not ready")
+        PDDocument.load(file).use { document ->
+            val stripper = PDFTextStripper().apply { sortByPosition = true }
+            val text = stripper.getText(document).trim()
+            if (text.isBlank()) throw IllegalStateException("No selectable text found. This PDF may be image-only; run OCR first.")
+            text.take(maxChars)
         }
     }
 
