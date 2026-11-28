@@ -183,13 +183,14 @@ jobs:
           # otherwise exits immediately with "-accel off is not supported".
           ANDROID_I_WANT_MY_TCG: "yes"
         with:
-          # Use a current Android image on the stable Ubuntu 24.04 runner.
-          api-level: 35
+          # API 30 is lighter under forced TCG software emulation than API 35.
+          # Keep the same real instrumentation tests; only the CI device image changes.
+          api-level: 30
           target: google_apis
           arch: x86_64
           profile: pixel_2
           cores: 2
-          emulator-boot-timeout: 900
+          emulator-boot-timeout: 1200
           # Software-emulated ADB settings calls can drop the emulator connection.
           # Leave animations enabled; test correctness does not depend on animation speed.
           disable-animations: false
