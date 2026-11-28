@@ -77,6 +77,14 @@ class GeminiCredentialVault(context: Context) {
     @Synchronized
     fun readApiKey(pin: String): String? {
         check(verifyPin(pin)) { "Incorrect PIN." }
+        return decryptApiKey()
+    }
+
+    /** Reads the saved key only for a user-triggered Gemini action; Settings stays PIN-gated. */
+    @Synchronized
+    fun readApiKeyForAi(): String? = decryptApiKey()
+
+    private fun decryptApiKey(): String? {
         val ivText = prefs.getString(KEY_IV, null) ?: return null
         val cipherText = prefs.getString(KEY_CIPHER_TEXT, null) ?: return null
         val cipher = Cipher.getInstance(TRANSFORMATION)
