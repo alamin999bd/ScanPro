@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -183,8 +183,8 @@ jobs:
           # otherwise exits immediately with "-accel off is not supported".
           ANDROID_I_WANT_MY_TCG: "yes"
         with:
-          # API 30 uses a lighter system image for software CPU emulation.
-          api-level: 30
+          # Use a current Android image on the stable Ubuntu 24.04 runner.
+          api-level: 35
           target: google_apis
           arch: x86_64
           profile: pixel_2
