@@ -7,11 +7,11 @@ An offline-first Android document scanning and PDF utility built with Kotlin and
 - **Android:** minSdk 26, targetSdk 35
 - **Branch:** `document-scanner-premium`
 
-The project includes camera and gallery scanning, page editing, PDF tools, Bangla/English OCR, searchable PDFs, and text-based DOCX/XLSX import.
+The project includes camera and gallery scanning, page editing, PDF tools, Bangla/English OCR, searchable PDFs, text-based DOCX/XLSX import, and optional online Gemini PDF assistance. Core scanning and PDF tools remain offline-capable; Gemini sends extracted PDF text to Google only when the user starts an AI action.
 
 ## CI status
 
-[Latest verified Build #264](https://github.com/alamin999bd/ScanPro/actions/runs/46122270245) passed unit tests, all 3 OfficeConverter instrumentation tests, APK builds/signature checks, and source ZIP integrity verification.
+[Latest verified Build #280](https://github.com/alamin999bd/ScanPro/actions/runs/46152325906) passed unit tests, all 3 OfficeConverter instrumentation tests, APK builds/signature checks, and source ZIP integrity verification.
 
 **Release signing is not yet finalized.** The successful CI run used the temporary Gradle debug-key fallback for the release APK. Configure the persistent release keystore secrets and run the workflow with `use_persistent_signing=true` before distributing a final updateable APK. Samsung Galaxy M12 physical testing is also pending.
 
