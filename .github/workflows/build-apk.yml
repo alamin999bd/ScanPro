@@ -178,12 +178,20 @@ jobs:
 
       - name: Run OfficeConverter tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # GitHub-hosted Linux runners may not expose KVM. Android Emulator
+          # otherwise exits immediately with "-accel off is not supported".
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
-          api-level: 35
+          # API 30 uses a lighter system image for software CPU emulation.
+          api-level: 30
           target: google_apis
           arch: x86_64
           profile: pixel_2
+          cores: 2
+          emulator-boot-timeout: 900
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
             chmod +x gradlew
             ./gradlew --no-daemon --console=plain connectedDebugAndroidTest
