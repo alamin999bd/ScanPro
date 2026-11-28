@@ -131,6 +131,8 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                 }
             }
 
+            GeminiSecurityCard(context)
+
             SettingsCard(title = "PDF page size") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
