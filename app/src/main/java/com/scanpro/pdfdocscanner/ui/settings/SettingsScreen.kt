@@ -238,8 +238,8 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Works fully offline. The app has no internet permission, no account and no ads. " +
-                        "Your documents never leave this device unless you share them yourself.",
+                    "Core scanning and PDF tools work offline. Gemini AI features need internet and send the selected PDF text to Google only when you choose an AI action. " +
+                        "No account or ads. Avoid sending private or sensitive documents to Gemini.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
